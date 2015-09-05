@@ -1,0 +1,6 @@
+-main Test
+-lib hxnodejs
+-js test.js
+-D analyzer
+-D js-es5
+-dce full
