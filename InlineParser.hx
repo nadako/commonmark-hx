@@ -29,7 +29,6 @@ typedef Ref = {
 
 class InlineParser {
     static var normalizeReference:String->String = js.Lib.require("./normalize-reference.js");
-    static var fromCodePoint:Int->String = js.Lib.require("./from-code-point.js");
 
     public var options:InlineParserOptions;
     var subject:String;
@@ -142,7 +141,7 @@ class InlineParser {
         }
         if (!res) {
             pos++;
-            block.appendChild(text(fromCodePoint(c)));
+            block.appendChild(text(String.fromCharCode(c)));
         }
         return true;
     }
@@ -259,7 +258,7 @@ class InlineParser {
         if (cc_after == -1)
             char_after = '\n';
         else
-            char_after = fromCodePoint(cc_after);
+            char_after = String.fromCharCode(cc_after);
 
         var after_is_whitespace = reWhitespaceChar.match(char_after);
         var after_is_punctuation = rePunctuation.match(char_after);
