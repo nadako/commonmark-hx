@@ -1,0 +1,15 @@
+-D js-es5
+-dce full
+-D analyzer
+--each
+
+-main Test
+-js test.js
+-lib hxnodejs
+
+--next
+-main Main
+-js main.js
+
+--next
+-cmd node main.js
