@@ -507,7 +507,7 @@ class InlineParser {
 
         // Inline link?
         var matched = false;
-        var dest, title;
+        var dest = null, title = null;
         if (peek() == C_OPEN_PAREN) {
             pos++;
             if (spnl() &&
