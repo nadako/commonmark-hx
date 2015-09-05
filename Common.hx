@@ -68,10 +68,8 @@ class Common {
             return s;
     }
 
-    static inline var C_BACKSLASH = 92;
-
     static function unescapeChar(s:String):String {
-        if (s.charCodeAt(0) == C_BACKSLASH)
+        if (s.charCodeAt(0) == "\\".code)
             return s.charAt(1);
         else
             return decodeHTML(s);

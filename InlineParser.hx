@@ -53,7 +53,6 @@ class InlineParser {
     static inline var C_CLOSE_BRACKET = 93;
     static inline var C_LESSTHAN = 60;
     static inline var C_BANG = 33;
-    static inline var C_BACKSLASH = 92;
     static inline var C_AMPERSAND = 38;
     static inline var C_OPEN_PAREN = 40;
     static inline var C_CLOSE_PAREN = 41;
@@ -125,7 +124,7 @@ class InlineParser {
         switch(c) {
             case C_NEWLINE:
                 res = parseNewline(block);
-            case C_BACKSLASH:
+            case "\\".code:
                 res = parseBackslash(block);
             case C_BACKTICK:
                 res = parseBackticks(block);
