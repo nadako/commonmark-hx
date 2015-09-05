@@ -1,3 +1,14 @@
+@:native("___support")
+private extern class Support {
+    static function decodeHTML(s:String):String;
+    static function decodeURI(s:String):String;
+    static function encodeURI(s:String):String;
+
+    static function __init__():Void {
+        haxe.macro.Compiler.includeFile("support.js");
+    }
+}
+
 class Common {
     public static inline var ENTITY = "&(?:#x[a-f0-9]{1,8}|#[0-9]{1,8}|[a-z][a-z0-9]{1,31});";
     public static inline var ESCAPABLE = '[!"#$%&\'()*+,./:;<=>?@[\\\\\\]^_`{|}~-]';
@@ -22,10 +33,6 @@ class Common {
     static var reBackslashOrAmp = ~/[\\&]/;
     static var reEntityOrEscapedChar = new EReg('\\\\' + ESCAPABLE + '|' + ENTITY, 'gi');
 
-    static var encode:String->String = js.Lib.require("./encode.js");
-    static var decode:String->String = js.Lib.require("./decode.js");
-    public static var decodeHTML:String->String = js.Lib.require('./entities/decode.js');
-
     static inline var XMLSPECIAL = '[&<>"]';
     static var reXmlSpecial = new EReg(XMLSPECIAL, 'g');
     static var reXmlSpecialOrEntity = new EReg(ENTITY + '|' + XMLSPECIAL, 'gi');
@@ -45,6 +52,10 @@ class Common {
         }
     }
 
+    public static inline function decodeHTML(s:String):String {
+        return Support.decodeHTML(s);
+    }
+
     public static function escapeXml(s:String, preserve_entities:Bool):String {
         if (reXmlSpecial.match(s)) {
             if (preserve_entities)
@@ -57,7 +68,7 @@ class Common {
     }
 
     public static function normalizeURI(uri:String):String {
-        return try encode(decode(uri)) catch (_:Dynamic) uri;
+        return try Support.encodeURI(Support.decodeURI(uri)) catch (_:Dynamic) uri;
     }
 
     // Replace entities and backslash escapes with literal characters.

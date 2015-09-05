@@ -10,8 +10,7 @@ addons:
       - python3
 
 install:
-  - haxelib git hxnodejs https://github.com/HaxeFoundation/hxnodejs
   - git clone https://github.com/jgm/CommonMark
 
 script:
-  - haxe test.hxml && cd CommonMark && python3 test/spec_tests.py --program "node ../test.js"
+  - haxe build.hxml && cd CommonMark && python3 test/spec_tests.py --program "node ../bin/test.js"
