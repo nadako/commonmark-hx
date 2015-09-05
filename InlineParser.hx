@@ -165,7 +165,7 @@ class InlineParser {
     }
 
     function text(s:String):Node {
-        var node = new Node('Text');
+        var node = new Node(Text);
         node.literal = s;
         return node;
     }
@@ -186,12 +186,12 @@ class InlineParser {
         pos++; // assume we're at a \n
         // check previous node for trailing spaces
         var lastc = block.lastChild;
-        if (lastc != null && lastc.type == 'Text' && lastc.literal.charAt(lastc.literal.length - 1) == ' ') {
+        if (lastc != null && lastc.type == Text && lastc.literal.charAt(lastc.literal.length - 1) == ' ') {
             var hardbreak = lastc.literal.charAt(lastc.literal.length - 2) == ' ';
             lastc.literal = reFinalSpace.replace(lastc.literal, "");
-            block.appendChild(new Node(hardbreak ? 'Hardbreak' : 'Softbreak'));
+            block.appendChild(new Node(hardbreak ? Hardbreak : Softbreak));
         } else {
-            block.appendChild(new Node('Softbreak'));
+            block.appendChild(new Node(Softbreak));
         }
         match(reInitialSpace); // gobble leading spaces in next line
         return true;
@@ -308,7 +308,7 @@ class InlineParser {
         pos++;
         if (peek() == C_NEWLINE) {
             pos++;
-            block.appendChild(new Node('Hardbreak'));
+            block.appendChild(new Node(Hardbreak));
         } else if (reEscapable.match(subj.charAt(pos))) {
             block.appendChild(text(subj.charAt(pos)));
             pos++;
@@ -329,7 +329,7 @@ class InlineParser {
         var matched;
         while ((matched = match(reTicks)) != null) {
             if (matched == ticks) {
-                var node = new Node('Code');
+                var node = new Node(Code);
                 node.literal = reWhitespace.replace(StringTools.trim(subject.substring(afterOpenTicks, pos - ticks.length)), ' ');
                 block.appendChild(node);
                 return true;
@@ -346,7 +346,7 @@ class InlineParser {
         var m = match(reHtmlTag);
         if (m == null)
             return false;
-        var node = new Node('Html');
+        var node = new Node(Html);
         node.literal = m;
         block.appendChild(node);
         return true;
@@ -414,7 +414,7 @@ class InlineParser {
         var m;
         if ((m = match(reEmailAutolink)) != null) {
             var dest = m.substring(1, m.length - 1);
-            var node = new Node('Link');
+            var node = new Node(Link);
             node.destination = normalizeURI('mailto:' + dest);
             node.title = '';
             node.appendChild(text(dest));
@@ -422,7 +422,7 @@ class InlineParser {
             return true;
         } else if ((m = this.match(reAutolink)) != null) {
             var dest = m.substring(1, m.length - 1);
-            var node = new Node('Link');
+            var node = new Node(Link);
             node.destination = normalizeURI(dest);
             node.title = '';
             node.appendChild(text(dest));
@@ -550,7 +550,7 @@ class InlineParser {
         }
 
         if (matched) {
-            var node = new Node(is_image ? 'Image' : 'Link');
+            var node = new Node(is_image ? Image : Link);
             node.destination = dest;
             node.title = title != null ? title : '';
 
@@ -684,7 +684,7 @@ class InlineParser {
                         closer_inl.literal = closer_inl.literal.substring(0, closer_inl.literal.length - use_delims);
 
                         // build contents for new emph element
-                        var emph = new Node(use_delims == 1 ? 'Emph' : 'Strong');
+                        var emph = new Node(use_delims == 1 ? Emph : Strong);
 
                         var tmp = opener_inl.next;
                         while (tmp != null && tmp != closer_inl) {

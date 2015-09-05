@@ -1,6 +1,30 @@
-typedef NodeType = String;
+enum NodeType {
+    Document;
+    List;
+    Item;
+    BlockQuote;
+    Header;
+    HorizontalRule;
+    CodeBlock;
+    HtmlBlock;
+    Paragraph;
+    Text;
+    Hardbreak;
+    Softbreak;
+    Code;
+    Link;
+    Image;
+    Emph;
+    Strong;
+    Html;
+}
+
+enum ListType {
+    Ordered;
+    Bullet;
+}
+
 typedef SourcePos = Array<Array<Int>>;
-typedef ListType = String;
 typedef ListData = {
     var type:ListType;
     var tight:Bool;
@@ -65,16 +89,16 @@ class Node {
 
     function get_isContainer():Bool {
         switch (type) {
-            case 'Document'
-               | 'BlockQuote'
-               | 'List'
-               | 'Item'
-               | 'Paragraph'
-               | 'Header'
-               | 'Emph'
-               | 'Strong'
-               | 'Link'
-               | 'Image'
+            case Document
+               | BlockQuote
+               | List
+               | Item
+               | Paragraph
+               | Header
+               | Emph
+               | Strong
+               | Link
+               | Image
                :
                 return true;
             default:

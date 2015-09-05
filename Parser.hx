@@ -3,6 +3,7 @@ import Common.OPENTAG;
 import Common.CLOSETAG;
 import js.Browser.console;
 import Node.ListData;
+import Node.NodeType;
 
 typedef ParserOptions = {
     >InlineParser.InlineParserOptions,
@@ -12,7 +13,7 @@ typedef ParserOptions = {
 typedef BlockBehaviour = {
     function doContinue(parser:Parser, block:Node):Int;
     function finalize(parser:Parser, block:Node):Void;
-    function canContain(t:String):Bool;
+    function canContain(t:NodeType):Bool;
     var acceptsLines:Bool;
 }
 
@@ -90,14 +91,14 @@ class Parser {
     // at a certain line and offset (e.g. whether a block quote
     // contains a `>`.  It returns 0 for matched, 1 for not matched,
     // and 2 for "we've dealt with this line completely, go to next."
-    var blocks:Map<String,BlockBehaviour> = [
-        "Document" => {
+    var blocks:Map<NodeType,BlockBehaviour> = [
+        Document => {
             doContinue: function(_, _) return 0,
             finalize: function(_, _) {},
-            canContain: function(t) return (t != 'Item'),
+            canContain: function(t) return (t != Item),
             acceptsLines: false
         },
-        "List" => {
+        List => {
             doContinue: function(_, _) return 0,
             finalize: function(parser, block) {
                 var item = block.firstChild;
@@ -120,10 +121,10 @@ class Parser {
                     item = item.next;
                 }
             },
-            canContain: function(t) return (t == 'Item'),
+            canContain: function(t) return (t == Item),
             acceptsLines: false
         },
-        "BlockQuote" => {
+        BlockQuote => {
             doContinue: function(parser, _) {
                 var ln = parser.currentLine;
                 if (!parser.indented && peek(ln, parser.nextNonspace) == C_GREATERTHAN) {
@@ -137,10 +138,10 @@ class Parser {
                 return 0;
             },
             finalize: function(_, _) {},
-            canContain: function(t) return (t != 'Item'),
+            canContain: function(t) return (t != Item),
             acceptsLines: false
         },
-        "Item" => {
+        Item => {
             doContinue: function(parser, container) {
                 if (parser.blank && container.firstChild != null) {
                     parser.advanceNextNonspace();
@@ -152,10 +153,10 @@ class Parser {
                 return 0;
             },
             finalize: function(_, _) {},
-            canContain: function(t) return (t != 'Item'),
+            canContain: function(t) return (t != Item),
             acceptsLines: false
         },
-        "Header" => {
+        Header => {
             doContinue: function(_, _) {
                 // a header can never container > 1 line, so fail to match:
                 return 1;
@@ -164,7 +165,7 @@ class Parser {
             canContain: function(_) return false,
             acceptsLines: false
         },
-        "HorizontalRule" => {
+        HorizontalRule => {
             doContinue: function(_, _) {
                 // an hrule can never container > 1 line, so fail to match:
                 return 1;
@@ -173,7 +174,7 @@ class Parser {
             canContain: function(_) return false,
             acceptsLines: false
         },
-        "CodeBlock" => {
+        CodeBlock => {
             doContinue: function(parser, container) {
                 var ln = parser.currentLine;
                 var indent = parser.indent;
@@ -219,7 +220,7 @@ class Parser {
             canContain: function(_) return false,
             acceptsLines: true
         },
-        "HtmlBlock" => {
+        HtmlBlock => {
             doContinue: function(parser, container) {
                 return ((parser.blank && (container.htmlBlockType == 6 || container.htmlBlockType == 7)) ? 1 : 0);
             },
@@ -230,7 +231,7 @@ class Parser {
             canContain: function(_) return false,
             acceptsLines: true
         },
-        "Paragraph" => {
+        Paragraph => {
             doContinue: function(parser, _) {
                 return (parser.blank ? 1 : 0);
             },
@@ -266,7 +267,7 @@ class Parser {
                 if (peek(parser.currentLine, parser.offset) == C_SPACE)
                     parser.advanceOffset(1, false);
                 parser.closeUnmatchedBlocks();
-                parser.addChild('BlockQuote', parser.nextNonspace);
+                parser.addChild(BlockQuote, parser.nextNonspace);
                 return 1;
             } else {
                 return 0;
@@ -279,7 +280,7 @@ class Parser {
                 parser.advanceNextNonspace();
                 parser.advanceOffset(reATXHeaderMarker.matched(0).length, false);
                 parser.closeUnmatchedBlocks();
-                var container = parser.addChild('Header', parser.nextNonspace);
+                var container = parser.addChild(Header, parser.nextNonspace);
                 container.level = StringTools.trim(reATXHeaderMarker.matched(0)).length; // number of #s
                 // remove trailing ###s:
                 container.string_content = ~/ +#+ *$/.replace(~/^ *#+ *$/.replace(parser.currentLine.substr(parser.offset), ''), '');
@@ -295,7 +296,7 @@ class Parser {
             if (!parser.indented && reCodeFence.match(parser.currentLine.substr(parser.nextNonspace))) {
                 var fenceLength = reCodeFence.matched(0).length;
                 parser.closeUnmatchedBlocks();
-                var container = parser.addChild('CodeBlock', parser.nextNonspace);
+                var container = parser.addChild(CodeBlock, parser.nextNonspace);
                 container.isFenced = true;
                 container.fenceLength = fenceLength;
                 container.fenceChar = reCodeFence.matched(0).charAt(0);
@@ -313,11 +314,11 @@ class Parser {
             if (!parser.indented && peek(parser.currentLine, parser.nextNonspace) == C_LESSTHAN) {
                 var s = parser.currentLine.substr(parser.nextNonspace);
                 for (blockType in 1...8) {
-                    if (reHtmlBlockOpen[blockType].match(s) && (blockType < 7 || container.type != 'Paragraph')) {
+                    if (reHtmlBlockOpen[blockType].match(s) && (blockType < 7 || container.type != Paragraph)) {
                         parser.closeUnmatchedBlocks();
                         // We don't adjust parser.offset;
                         // spaces are part of the HTML block:
-                        var b = parser.addChild('HtmlBlock', parser.offset);
+                        var b = parser.addChild(HtmlBlock, parser.offset);
                         b.htmlBlockType = blockType;
                         return 2;
                     }
@@ -328,9 +329,9 @@ class Parser {
 
         // Setext header
         function(parser:Parser, container:Node):Int {
-            if (!parser.indented && container.type == 'Paragraph' && (container.string_content.indexOf('\n') == container.string_content.length - 1) && (reSetextHeaderLine.match(parser.currentLine.substring(parser.nextNonspace)))) {
+            if (!parser.indented && container.type == Paragraph && (container.string_content.indexOf('\n') == container.string_content.length - 1) && (reSetextHeaderLine.match(parser.currentLine.substring(parser.nextNonspace)))) {
                 parser.closeUnmatchedBlocks();
-                var header = new Node('Header', container.sourcepos);
+                var header = new Node(Header, container.sourcepos);
                 header.level = reSetextHeaderLine.matched(0).charAt(0) == '=' ? 1 : 2;
                 header.string_content = container.string_content;
                 container.insertAfter(header);
@@ -347,7 +348,7 @@ class Parser {
         function(parser:Parser, container:Node):Int {
             if (!parser.indented && reHrule.match(parser.currentLine.substr(parser.nextNonspace))) {
                 parser.closeUnmatchedBlocks();
-                parser.addChild('HorizontalRule', parser.nextNonspace);
+                parser.addChild(HorizontalRule, parser.nextNonspace);
                 parser.advanceOffset(parser.currentLine.length - parser.offset, false);
                 return 2;
             } else {
@@ -358,7 +359,7 @@ class Parser {
         // list item
         function(parser:Parser, container:Node):Int {
             var data = parseListMarker(parser.currentLine, parser.nextNonspace, parser.indent);
-            if (data != null && (!parser.indented || container.type == 'List')) {
+            if (data != null && (!parser.indented || container.type == List)) {
                 parser.closeUnmatchedBlocks();
                 parser.advanceNextNonspace();
                 // recalculate data.padding, taking into account tabs:
@@ -367,13 +368,13 @@ class Parser {
                 data.padding = parser.column - i;
 
                 // add the list if needed
-                if (parser.tip.type != 'List' || !(listsMatch(container.listData, data))) {
-                    container = parser.addChild('List', parser.nextNonspace);
+                if (parser.tip.type != List || !(listsMatch(container.listData, data))) {
+                    container = parser.addChild(List, parser.nextNonspace);
                     container.listData = data;
                 }
 
                 // add the list item
-                container = parser.addChild('Item', parser.nextNonspace);
+                container = parser.addChild(Item, parser.nextNonspace);
                 container.listData = data;
                 return 1;
             } else {
@@ -383,11 +384,11 @@ class Parser {
 
         // indented code block
         function(parser:Parser, container:Node):Int {
-            if (parser.indented && parser.tip.type != 'Paragraph' && !parser.blank) {
+            if (parser.indented && parser.tip.type != Paragraph && !parser.blank) {
                 // indented code
                 parser.advanceOffset(CODE_INDENT, true);
                 parser.closeUnmatchedBlocks();
-                parser.addChild('CodeBlock', parser.offset);
+                parser.addChild(CodeBlock, parser.offset);
                 return 2;
             } else {
                 return 0;
@@ -420,7 +421,7 @@ class Parser {
         lastLineLength = 0;
     }
 
-    inline function newDocument() return new Node('Document', [[1, 1], [0, 0]]);
+    inline function newDocument() return new Node(Document, [[1, 1], [0, 0]]);
 
     // The main parsing function.  Returns a parsed document AST.
     public function parse(input:String):Node {
@@ -501,7 +502,7 @@ class Parser {
         if (blank && container.lastLineBlank)
             breakOutOfLists(container);
 
-        var matchedLeaf = container.type != 'Paragraph' && blocks[container.type].acceptsLines;
+        var matchedLeaf = container.type != Paragraph && blocks[container.type].acceptsLines;
         var starts = blockStarts;
         var startsLen = starts.length;
         // Unless last matched container is a code block, try new container starts,
@@ -540,7 +541,7 @@ class Parser {
         // appropriate container.
 
         // First check for a lazy paragraph continuation:
-        if (!allClosed && !blank && tip.type == 'Paragraph') {
+        if (!allClosed && !blank && tip.type == Paragraph) {
             // lazy paragraph continuation
             addLine();
 
@@ -557,7 +558,7 @@ class Parser {
             // and we don't count blanks in fenced code for purposes of tight/loose
             // lists or breaking out of lists.  We also don't set _lastLineBlank
             // on an empty list item, or if we just closed a fenced block.
-            var lastLineBlank = blank && !(t == 'BlockQuote' || (t == 'CodeBlock' && container.isFenced) || (t == 'Item' && container.firstChild == null && container.sourcepos[0][0] == this.lineNumber));
+            var lastLineBlank = blank && !(t == BlockQuote || (t == CodeBlock && container.isFenced) || (t == Item && container.firstChild == null && container.sourcepos[0][0] == this.lineNumber));
 
             // propagate lastLineBlank up through parents:
             var cont = container;
@@ -569,12 +570,12 @@ class Parser {
             if (blocks[t].acceptsLines) {
                 addLine();
                 // if HtmlBlock, check for end condition
-                if (t == 'HtmlBlock' && container.htmlBlockType >= 1 && container.htmlBlockType <= 5 && reHtmlBlockClose[container.htmlBlockType].match(currentLine.substring(offset)))
+                if (t == HtmlBlock && container.htmlBlockType >= 1 && container.htmlBlockType <= 5 && reHtmlBlockClose[container.htmlBlockType].match(currentLine.substring(offset)))
                     finalize(container, lineNumber);
 
             } else if (offset < ln.length && !blank) {
                 // create paragraph container for line
-                container = this.addChild('Paragraph', this.offset);
+                container = this.addChild(Paragraph, this.offset);
                 this.advanceNextNonspace();
                 this.addLine();
             }
@@ -605,7 +606,7 @@ class Parser {
         while ((event = walker.next()) != null) {
             var node = event.node;
             var t = node.type;
-            if (!event.entering && (t == 'Paragraph' || t == 'Header'))
+            if (!event.entering && (t == Paragraph || t == Header))
                 inlineParser.parse(node);
         }
     }
@@ -642,7 +643,7 @@ class Parser {
         var b = block;
         var last_list = null;
         do {
-            if (b.type == 'List')
+            if (b.type == List)
                 last_list = b;
             b = b.parent;
         } while (b != null);
@@ -684,7 +685,7 @@ class Parser {
     // Add block of type tag as a child of the tip.  If the tip can't
     // accept children, close and finalize it and try its parent,
     // and so on til we find a block that can accept children.
-    function addChild(tag:String, offset:Int):Node {
+    function addChild(tag:NodeType, offset:Int):Node {
         while (!blocks[tip.type].canContain(tag))
             finalize(tip, lineNumber - 1);
 
@@ -717,7 +718,7 @@ class Parser {
     static function parseListMarker(ln:String, offset:Int, indent:Int):ListData {
         var rest = ln.substr(offset);
         var spaces_after_marker;
-        var data = {
+        var data:ListData = {
             type: null,
             tight: true,  // lists are tight by default
             bulletChar: null,
@@ -730,12 +731,12 @@ class Parser {
         if (reBulletListMarker.match(rest)) {
             match = reBulletListMarker.matched(0);
             spaces_after_marker = reBulletListMarker.matched(1).length;
-            data.type = 'Bullet';
+            data.type = Bullet;
             data.bulletChar = reBulletListMarker.matched(0).charAt(0);
         } else if (reOrderedListMarker.match(rest)) {
             match = reOrderedListMarker.matched(0);
             spaces_after_marker = reOrderedListMarker.matched(3).length;
-            data.type = 'Ordered';
+            data.type = Ordered;
             data.start = Std.parseInt(reOrderedListMarker.matched(1));
             data.delimiter = reOrderedListMarker.matched(2);
         } else {
@@ -765,7 +766,7 @@ class Parser {
             if (block.lastLineBlank)
                 return true;
             var t = block.type;
-            if (t == 'List' || t == 'Item')
+            if (t == List || t == Item)
                 block = block.lastChild;
             else
                 break;

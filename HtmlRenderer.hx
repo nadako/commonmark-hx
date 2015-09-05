@@ -76,158 +76,155 @@ class HtmlRenderer {
             }
 
             switch (node.type) {
-            case 'Text':
-                out(esc(node.literal, false));
+                case Text:
+                    out(esc(node.literal, false));
 
-            case 'Softbreak':
-                out(this.softbreak);
+                case Softbreak:
+                    out(this.softbreak);
 
-            case 'Hardbreak':
-                out(tag('br', [], true));
-                cr();
+                case Hardbreak:
+                    out(tag('br', [], true));
+                    cr();
 
-            case 'Emph':
-                out(tag(entering ? 'em' : '/em'));
+                case Emph:
+                    out(tag(entering ? 'em' : '/em'));
 
-            case 'Strong':
-                out(tag(entering ? 'strong' : '/strong'));
+                case Strong:
+                    out(tag(entering ? 'strong' : '/strong'));
 
-            case 'Html':
-                if (options.safe) {
-                    out('<!-- raw HTML omitted -->');
-                } else {
-                    out(node.literal);
-                }
-
-            case 'Link':
-                if (entering) {
-                    if (!(options.safe && potentiallyUnsafe(node.destination))) {
-                        attrs.push(['href', esc(node.destination, true)]);
+                case Html:
+                    if (options.safe) {
+                        out('<!-- raw HTML omitted -->');
+                    } else {
+                        out(node.literal);
                     }
-                    if (node.title != null && node.title.length > 0)
-                        attrs.push(['title', esc(node.title, true)]);
-                    out(tag('a', attrs));
-                } else {
-                    out(tag('/a'));
-                }
 
-            case 'Image':
-                if (entering) {
-                    if (disableTags == 0) {
-                        if (options.safe &&
-                             potentiallyUnsafe(node.destination)) {
-                            out('<img src="" alt="');
-                        } else {
-                            out('<img src="' + esc(node.destination, true) +
-                                '" alt="');
+                case Link:
+                    if (entering) {
+                        if (!(options.safe && potentiallyUnsafe(node.destination))) {
+                            attrs.push(['href', esc(node.destination, true)]);
+                        }
+                        if (node.title != null && node.title.length > 0)
+                            attrs.push(['title', esc(node.title, true)]);
+                        out(tag('a', attrs));
+                    } else {
+                        out(tag('/a'));
+                    }
+
+                case Image:
+                    if (entering) {
+                        if (disableTags == 0) {
+                            if (options.safe &&
+                                 potentiallyUnsafe(node.destination)) {
+                                out('<img src="" alt="');
+                            } else {
+                                out('<img src="' + esc(node.destination, true) +
+                                    '" alt="');
+                            }
+                        }
+                        disableTags += 1;
+                    } else {
+                        disableTags -= 1;
+                        if (disableTags == 0) {
+                            if (node.title != null && node.title.length > 0)
+                                out('" title="' + esc(node.title, true));
+                            out('" />');
                         }
                     }
-                    disableTags += 1;
-                } else {
-                    disableTags -= 1;
-                    if (disableTags == 0) {
-                        if (node.title != null && node.title.length > 0)
-                            out('" title="' + esc(node.title, true));
-                        out('" />');
+
+                case Code:
+                    out(tag('code') + esc(node.literal, false) + tag('/code'));
+
+                case Document:
+
+                case Paragraph:
+                    grandparent = node.parent.parent;
+                    var done = false;
+                    if (grandparent != null &&
+                        grandparent.type == List) {
+                        if (grandparent.listTight) {
+                            done = true;
+                        }
                     }
-                }
-
-            case 'Code':
-                out(tag('code') + esc(node.literal, false) + tag('/code'));
-
-            case 'Document':
-
-            case 'Paragraph':
-                grandparent = node.parent.parent;
-                var done = false;
-                if (grandparent != null &&
-                    grandparent.type == 'List') {
-                    if (grandparent.listTight) {
-                        done = true;
+                    if (!done) {
+                        if (entering) {
+                            cr();
+                            out(tag('p', attrs));
+                        } else {
+                            out(tag('/p'));
+                            cr();
+                        }
                     }
-                }
-                if (!done) {
+
+                case BlockQuote:
                     if (entering) {
                         cr();
-                        out(tag('p', attrs));
+                        out(tag('blockquote', attrs));
+                        cr();
                     } else {
-                        out(tag('/p'));
+                        cr();
+                        out(tag('/blockquote'));
                         cr();
                     }
-                }
 
-            case 'BlockQuote':
-                if (entering) {
-                    cr();
-                    out(tag('blockquote', attrs));
-                    cr();
-                } else {
-                    cr();
-                    out(tag('/blockquote'));
-                    cr();
-                }
+                case Item:
+                    if (entering) {
+                        out(tag('li', attrs));
+                    } else {
+                        out(tag('/li'));
+                        cr();
+                    }
 
-            case 'Item':
-                if (entering) {
-                    out(tag('li', attrs));
-                } else {
-                    out(tag('/li'));
-                    cr();
-                }
+                case List:
+                    tagname = node.listType == Bullet ? 'ul' : 'ol';
+                    if (entering) {
+                        var start = node.listStart;
+                        if (start != null && start != 1) {
+                            attrs.push(['start', Std.string(start)]);
+                        }
+                        cr();
+                        out(tag(tagname, attrs));
+                        cr();
+                    } else {
+                        cr();
+                        out(tag('/' + tagname));
+                        cr();
+                    }
 
-            case 'List':
-                tagname = node.listType == 'Bullet' ? 'ul' : 'ol';
-                if (entering) {
-                    var start = node.listStart;
-                    if (start != null && start != 1) {
-                        attrs.push(['start', Std.string(start)]);
+                case Header:
+                    tagname = 'h' + node.level;
+                    if (entering) {
+                        cr();
+                        out(tag(tagname, attrs));
+                    } else {
+                        out(tag('/' + tagname));
+                        cr();
+                    }
+
+                case CodeBlock:
+                    info_words = node.info != null ? ~/\s+/g.split(node.info) : [];
+                    if (info_words.length > 0 && info_words[0].length > 0) {
+                        attrs.push(['class', 'language-' + esc(info_words[0], true)]);
                     }
                     cr();
-                    out(tag(tagname, attrs));
+                    out(tag('pre') + tag('code', attrs));
+                    out(esc(node.literal, false));
+                    out(tag('/code') + tag('/pre'));
                     cr();
-                } else {
+
+                case HtmlBlock:
                     cr();
-                    out(tag('/' + tagname));
+                    if (options.safe) {
+                        out('<!-- raw HTML omitted -->');
+                    } else {
+                        out(node.literal);
+                    }
                     cr();
-                }
 
-            case 'Header':
-                tagname = 'h' + node.level;
-                if (entering) {
+                case HorizontalRule:
                     cr();
-                    out(tag(tagname, attrs));
-                } else {
-                    out(tag('/' + tagname));
+                    out(tag('hr', attrs, true));
                     cr();
-                }
-
-            case 'CodeBlock':
-                info_words = node.info != null ? ~/\s+/g.split(node.info) : [];
-                if (info_words.length > 0 && info_words[0].length > 0) {
-                    attrs.push(['class', 'language-' + esc(info_words[0], true)]);
-                }
-                cr();
-                out(tag('pre') + tag('code', attrs));
-                out(esc(node.literal, false));
-                out(tag('/code') + tag('/pre'));
-                cr();
-
-            case 'HtmlBlock':
-                cr();
-                if (options.safe) {
-                    out('<!-- raw HTML omitted -->');
-                } else {
-                    out(node.literal);
-                }
-                cr();
-
-            case 'HorizontalRule':
-                cr();
-                out(tag('hr', attrs, true));
-                cr();
-
-            default:
-                throw "Unknown node type " + node.type;
             }
 
         }
