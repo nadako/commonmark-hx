@@ -4,7 +4,6 @@ import Common.reHtmlTag;
 import Common.normalizeURI;
 import Common.decodeHTML;
 import Common.unescapeString;
-import haxe.DynamicAccess;
 
 typedef InlineParserOptions = {
     var smart:Bool;

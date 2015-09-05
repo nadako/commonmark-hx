@@ -1,13 +1,11 @@
 import Common.unescapeString;
 import Common.OPENTAG;
 import Common.CLOSETAG;
-import js.Browser.console;
 import Node.ListData;
 import Node.NodeType;
 
 typedef ParserOptions = {
     >InlineParser.InlineParserOptions,
-    var time:Bool;
 }
 
 typedef BlockBehaviour = {
@@ -399,7 +397,7 @@ class Parser {
 
     public function new(?options:ParserOptions) {
         if (options == null)
-            options = {smart: false, time: false};
+            options = {smart: false};
         this.options = options;
 
         inlineParser = new InlineParser(options);
@@ -434,22 +432,16 @@ class Parser {
         column = 0;
         lastMatchedContainer = doc;
         currentLine = "";
-        if (options.time) console.time("preparing input");
         var lines = reLineEnding.split(input);
         var len = lines.length;
         if (input.charCodeAt(input.length - 1) == C_NEWLINE)
             // ignore last blank line created by final newline
             len--;
-        if (options.time) console.timeEnd("preparing input");
-        if (options.time) console.time("block parsing");
         for (i in 0...len)
             incorporateLine(lines[i]);
         while (tip != null)
             finalize(tip, len);
-        if (options.time) console.timeEnd("block parsing");
-        if (options.time) console.time("inline parsing");
         processInlines(doc);
-        if (options.time) console.timeEnd("inline parsing");
         return doc;
     }
 

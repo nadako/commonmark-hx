@@ -25,6 +25,7 @@ enum ListType {
 }
 
 typedef SourcePos = Array<Array<Int>>;
+
 typedef ListData = {
     var type:ListType;
     var tight:Bool;

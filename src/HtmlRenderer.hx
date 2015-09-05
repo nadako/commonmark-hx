@@ -1,8 +1,6 @@
 import Common.escapeXml;
-import js.Browser.console;
 
 typedef HtmlRendererOptions = {
-    var time:Bool;
     var sourcepos:Bool;
     var safe:Bool;
 }
@@ -17,7 +15,7 @@ class HtmlRenderer {
 
     public function new(?options:HtmlRendererOptions) {
         if (options == null)
-            options = {time: false, sourcepos: false, safe: false};
+            options = {sourcepos: false, safe: false};
         this.options = options;
         
         softbreak = '\n'; // by default, soft breaks are rendered as newlines in HTML
@@ -58,8 +56,6 @@ class HtmlRenderer {
         };
 
         var options = this.options;
-
-        if (options.time) { console.time("rendering"); }
 
         while ((event = walker.next()) != null) {
             entering = event.entering;
@@ -228,7 +224,6 @@ class HtmlRenderer {
             }
 
         }
-        if (options.time) { console.timeEnd("rendering"); }
         return buffer;
     }
 
