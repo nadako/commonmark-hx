@@ -1,0 +1,17 @@
+language: haxe
+
+haxe:
+  - "3.2.0"
+  - development
+
+addons:
+  apt:
+    packages:
+      - python3
+
+install:
+  - git clone https://github.com/jgm/CommonMark
+
+script:
+  - haxe build.hxml
+  - cd CommonMark && python3 test/spec_tests.py --program "node ../test.js"
