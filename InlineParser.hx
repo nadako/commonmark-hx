@@ -28,7 +28,14 @@ typedef Ref = {
 }
 
 class InlineParser {
-    static var normalizeReference:String->String = js.Lib.require("./normalize-reference.js");
+    
+    static var normalizeReferenceRe = ~/[ \t\r\n]+/g;
+    static function normalizeReference(s:String):String {
+        s = s.substring(1, s.length - 1); // get rid of [ and ]
+        s = StringTools.trim(s); // get rid of surrounding whitespace
+        s = normalizeReferenceRe.replace(s, " "); // replace any whitespace with a single space
+        return s.toUpperCase(); // uppercase to ignore the case
+    }
 
     public var options:InlineParserOptions;
     var subject:String;
