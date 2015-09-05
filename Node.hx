@@ -35,7 +35,6 @@ typedef ListData = {
     var padding:Int;
 }
 
-@:allow(InlineParser)
 class Node {
     public var isContainer(get,never):Bool;
     public var type(default,null):NodeType;
@@ -187,8 +186,7 @@ class NodeWalker {
     var root:Node;
     var entering:Bool;
 
-    @:allow(Node.walker)
-    function new(root) {
+    public function new(root) {
         this.current = root;
         this.root = root;
         this.entering = true;
