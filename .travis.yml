@@ -14,4 +14,5 @@ install:
   - git clone https://github.com/jgm/CommonMark
 
 script:
+  - mkdir bin
   - haxe build.hxml && cd CommonMark && python3 test/spec_tests.py --program "node ../bin/test.js"
