@@ -29,28 +29,9 @@ function decodeCodePoint(codePoint){
     return output;
 }
 
-function sorter(a, b){
-    return a < b ? 1 : -1;
-}
-
-function getReplacer(map){
-    return function replace(str){
-        if(str.charAt(1) === "#"){
-            if(str.charAt(2) === "X" || str.charAt(2) === "x"){
-                return decodeCodePoint(parseInt(str.substr(3), 16));
-            }
-            return decodeCodePoint(parseInt(str.substr(2), 10));
-        }
-        return map[str.slice(1, -1)];
-    };
-}
-
 ___support.decodeHTML = (function(){
-    var legacy = Object.keys(legacyMap)
-        .sort(sorter);
-
-    var keys = Object.keys(entityMap)
-        .sort(sorter);
+    var legacy = Object.keys(legacyMap).sort();
+    var keys = Object.keys(entityMap).sort();
 
     for(var i = 0, j = 0; i < keys.length; i++){
         if(legacy[j] === keys[i]){
@@ -61,17 +42,22 @@ ___support.decodeHTML = (function(){
         }
     }
 
-    var re = new RegExp("&(?:" + keys.join("|") + "|#[xX][\\da-fA-F]+;?|#\\d+;?)", "g"),
-        replace = getReplacer(entityMap);
+    var re = new RegExp("&(?:" + keys.join("|") + "|#[xX][\\da-fA-F]+;?|#\\d+;?)", "g");
 
-    function replacer(str){
+    function replace(str){
         if(str.substr(-1) !== ";") str += ";";
-        return replace(str);
+        if(str.charAt(1) === "#"){
+            if(str.charAt(2) === "X" || str.charAt(2) === "x"){
+                return decodeCodePoint(parseInt(str.substr(3), 16));
+            }
+            return decodeCodePoint(parseInt(str.substr(2), 10));
+        }
+        return entityMap[str.slice(1, -1)];
     }
 
     //TODO consider creating a merged map
     return function(str){
-        return String(str).replace(re, replacer);
+        return str.replace(re, replace);
     };
 }());
 
@@ -79,39 +65,20 @@ ___support.decodeHTML = (function(){
 // --------------------------------------------------------------------------------------------------------------
 
 
-var decodeCache = {};
+var decodeCache = [];
 
-function getDecodeCache(exclude) {
-  var i, ch, cache = decodeCache[exclude];
-  if (cache) { return cache; }
+for (var i = 0; i < 128; i++)
+    decodeCache.push(String.fromCharCode(i));
 
-  cache = decodeCache[exclude] = [];
-
-  for (i = 0; i < 128; i++) {
-    ch = String.fromCharCode(i);
-    cache.push(ch);
-  }
-
-  for (i = 0; i < exclude.length; i++) {
-    ch = exclude.charCodeAt(i);
-    cache[ch] = '%' + ('0' + ch.toString(16).toUpperCase()).slice(-2);
-  }
-
-  return cache;
+var exclude = ';/?:@&=+$,#';
+for (var i = 0; i < exclude.length; i++) {
+    var ch = exclude.charCodeAt(i);
+    decodeCache[ch] = '%' + ('0' + ch.toString(16).toUpperCase()).slice(-2);
 }
-
 
 // Decode percent-encoded string.
 //
-function decode(string, exclude) {
-  var cache;
-
-  if (typeof exclude !== 'string') {
-    exclude = decode.defaultChars;
-  }
-
-  cache = getDecodeCache(exclude);
-
+___support.decodeURI = function(string) {
   return string.replace(/(%[a-f0-9]{2})+/gi, function(seq) {
     var i, l, b1, b2, b3, b4, char,
         result = '';
@@ -120,7 +87,7 @@ function decode(string, exclude) {
       b1 = parseInt(seq.slice(i + 1, i + 3), 16);
 
       if (b1 < 0x80) {
-        result += cache[b1];
+        result += decodeCache[b1];
         continue;
       }
 
@@ -190,73 +157,37 @@ function decode(string, exclude) {
 }
 
 
-decode.defaultChars   = ';/?:@&=+$,#';
-decode.componentChars = '';
-
-___support.decodeURI = decode;
-
-
 // --------------------------------------------------------------------------------------------------------------
 
 
-var encodeCache = {};
+var encodeCache = [];
 
-
-// Create a lookup array where anything but characters in `chars` string
-// and alphanumeric chars is percent-encoded.
-//
-function getEncodeCache(exclude) {
-  var i, ch, cache = encodeCache[exclude];
-  if (cache) { return cache; }
-
-  cache = encodeCache[exclude] = [];
-
-  for (i = 0; i < 128; i++) {
-    ch = String.fromCharCode(i);
+for (var i = 0; i < 128; i++) {
+    var ch = String.fromCharCode(i);
 
     if (/^[0-9a-z]$/i.test(ch)) {
-      // always allow unencoded alphanumeric characters
-      cache.push(ch);
+        // always allow unencoded alphanumeric characters
+        encodeCache.push(ch);
     } else {
-      cache.push('%' + ('0' + i.toString(16).toUpperCase()).slice(-2));
+        encodeCache.push('%' + ('0' + i.toString(16).toUpperCase()).slice(-2));
     }
-  }
+}
 
-  for (i = 0; i < exclude.length; i++) {
-    cache[exclude.charCodeAt(i)] = exclude[i];
-  }
-
-  return cache;
+var exclude = ";/?:@&=+$,-_.!~*'()#";
+for (var i = 0; i < exclude.length; i++) {
+    encodeCache[exclude.charCodeAt(i)] = exclude[i];
 }
 
 
 // Encode unsafe characters with percent-encoding, skipping already
 // encoded sequences.
-//
-//  - string       - string to encode
-//  - exclude      - list of characters to ignore (in addition to a-zA-Z0-9)
-//  - keepEscaped  - don't encode '%' in a correct escape sequence (default: true)
-//
-function encode(string, exclude, keepEscaped) {
-  var i, l, code, nextCode, cache,
-      result = '';
-
-  if (typeof exclude !== 'string') {
-    // encode(string, keepEscaped)
-    keepEscaped  = exclude;
-    exclude = encode.defaultChars;
-  }
-
-  if (typeof keepEscaped === 'undefined') {
-    keepEscaped = true;
-  }
-
-  cache = getEncodeCache(exclude);
+function encode(string) {
+  var i, l, code, nextCode, result = '';
 
   for (i = 0, l = string.length; i < l; i++) {
     code = string.charCodeAt(i);
 
-    if (keepEscaped && code === 0x25 /* % */ && i + 2 < l) {
+    if (code === 0x25 /* % */ && i + 2 < l) {
       if (/^[0-9a-f]{2}$/i.test(string.slice(i + 1, i + 3))) {
         result += string.slice(i, i + 3);
         i += 2;
@@ -265,7 +196,7 @@ function encode(string, exclude, keepEscaped) {
     }
 
     if (code < 128) {
-      result += cache[code];
+      result += encodeCache[code];
       continue;
     }
 
@@ -287,9 +218,6 @@ function encode(string, exclude, keepEscaped) {
 
   return result;
 }
-
-encode.defaultChars   = ";/?:@&=+$,-_.!~*'()#";
-encode.componentChars = "-_.!~*'()";
 
 ___support.encodeURI = encode;
 
