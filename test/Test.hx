@@ -5,7 +5,7 @@ class Test {
         proc.stdin.setEncoding("utf-8");
         proc.stdin.on("data", function(inp:String) {
             var out = run(inp);
-            proc.stdout.write(, "utf-8");
+            proc.stdout.write(out, "utf-8");
         });
         #elseif sys
         var inp = Sys.stdin().readAll().toString();
