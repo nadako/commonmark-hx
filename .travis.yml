@@ -17,9 +17,11 @@ matrix:
     - env: TARGET=cs
       install:
         - haxelib install hxcs
+        - git clone https://github.com/jgm/CommonMark
       addons:
         apt:
           packages:
+            - python3
             - mono-devel
             - mono-mcs
 
