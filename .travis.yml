@@ -10,9 +10,15 @@ addons:
     packages:
       - python3
 
+matrix:
+  include:
+    - env: TARGET=js
+    - env: TARGET=neko
+
 install:
   - git clone https://github.com/jgm/CommonMark
 
 script:
   - mkdir bin
-  - haxe build.hxml && cd CommonMark && python3 test/spec_tests.py --program "node ../bin/test.js"
+  - haxe travis.hxml
+  - neko bin/travis.n

@@ -3,5 +3,4 @@
 -main Test
 -D analyzer
 -dce full
--js bin/test.js
--D js-es5
+--each
