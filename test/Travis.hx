@@ -12,6 +12,7 @@ class Travis {
             case other:
                 throw "Unknown TARGET: " + other;
         };
+        trace("CWD", Sys.getCwd());
         Sys.setCwd("CommonMark");
         Sys.command("python3", ["test/spec_tests.py", "--program", testProgram]);
     }
