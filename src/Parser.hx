@@ -716,7 +716,7 @@ class Parser {
             bulletChar: null,
             start: null,
             delimiter: null,
-            padding: null,
+            padding: 0,
             markerOffset: indent
         };
         var match;

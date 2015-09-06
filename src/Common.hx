@@ -178,7 +178,7 @@ class Common {
                 if (code >= 0xD800 && code <= 0xDBFF && i + 1 < l) {
                     var nextCode = string.charCodeAt(i + 1);
                     if (nextCode >= 0xDC00 && nextCode <= 0xDFFF) {
-                        result += (untyped encodeURIComponent)(string.charAt(i) + string.charAt(i + 1));
+                        result += StringTools.urlEncode(string.charAt(i) + string.charAt(i + 1));
                         ii++;
                         continue;
                     }
@@ -187,7 +187,7 @@ class Common {
                 continue;
             }
 
-            result += (untyped encodeURIComponent)(string.charAt(i));
+            result += StringTools.urlEncode(string.charAt(i));
         }
 
         return result;

@@ -29,7 +29,7 @@ typedef SourcePos = Array<Array<Int>>;
 typedef ListData = {
     var type:ListType;
     var tight:Bool;
-    var start:Int;
+    var start:Null<Int>;
     var delimiter:String;
     var bulletChar:String;
     var markerOffset:Int;
@@ -52,7 +52,7 @@ class Node {
     public var level:Int;
     public var listType(get,set):ListType;
     public var listTight(get,set):Bool;
-    public var listStart(get,set):Int;
+    public var listStart(get,set):Null<Int>;
     public var listDelimiter(get,set):String;
     public var htmlBlockType:Int;
 
