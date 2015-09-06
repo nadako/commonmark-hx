@@ -9,7 +9,8 @@ typedef InlineParserOptions = {
     var smart:Bool;
 }
 
-typedef Delimiter = {
+@:publicFields
+class Delimiter {
     var cc:Int;
     var numdelims:Int;
     var node:Node;
@@ -18,7 +19,8 @@ typedef Delimiter = {
     var can_open:Bool;
     var can_close:Bool;
     var active:Bool;
-    @:optional var index:Int;
+    var index:Int;
+    function new() {}
 }
 
 typedef Ref = {
@@ -219,14 +221,16 @@ class InlineParser {
 
         // Add entry to stack for this opener
         delimiters = {
-            cc: cc,
-            numdelims: numdelims,
-            node: node,
-            previous: delimiters,
-            next: null,
-            can_open: res.can_open,
-            can_close: res.can_close,
-            active: true
+            var d = new Delimiter();
+            d.cc = cc;
+            d.numdelims = numdelims;
+            d.node = node;
+            d.previous = delimiters;
+            d.next = null;
+            d.can_open = res.can_open;
+            d.can_close = res.can_close;
+            d.active = true;
+            d;
         };
 
         if (delimiters.previous != null)
@@ -364,15 +368,17 @@ class InlineParser {
 
             // Add entry to stack for this opener
             delimiters = {
-                cc: C_BANG,
-                numdelims: 1,
-                node: node,
-                previous: delimiters,
-                next: null,
-                can_open: true,
-                can_close: false,
-                index: startpos + 1,
-                active: true
+                var d = new Delimiter();
+                d.cc = C_BANG;
+                d.numdelims = 1;
+                d.node = node;
+                d.previous = delimiters;
+                d.next = null;
+                d.can_open = true;
+                d.can_close = false;
+                d.index = startpos + 1;
+                d.active = true;
+                d;
             };
             if (delimiters.previous != null)
                 delimiters.previous.next = delimiters;
@@ -392,15 +398,17 @@ class InlineParser {
 
         // Add entry to stack for this opener
         delimiters = {
-            cc: C_OPEN_BRACKET,
-            numdelims: 1,
-            node: node,
-            previous: delimiters,
-            next: null,
-            can_open: true,
-            can_close: false,
-            index: startpos,
-            active: true
+            var d = new Delimiter();
+            d.cc = C_OPEN_BRACKET;
+            d.numdelims = 1;
+            d.node = node;
+            d.previous = delimiters;
+            d.next = null;
+            d.can_open = true;
+            d.can_close = false;
+            d.index = startpos;
+            d.active = true;
+            d;
         };
         if (delimiters.previous != null)
             delimiters.previous.next = delimiters;
