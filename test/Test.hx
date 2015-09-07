@@ -18,9 +18,9 @@ class Test {
     }
 
     static function run(inp:String):String {
-        var p = new Parser();
+        var p = new cmark.Parser();
         var ast = p.parse(inp);
-        var ren = new HtmlRenderer();
+        var ren = new cmark.HtmlRenderer();
         return ren.render(ast);
     }
 }

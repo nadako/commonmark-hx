@@ -1,8 +1,10 @@
-import Common.unescapeString;
-import Common.OPENTAG;
-import Common.CLOSETAG;
-import Node.ListData;
-import Node.NodeType;
+package cmark;
+
+import cmark.Common.unescapeString;
+import cmark.Common.OPENTAG;
+import cmark.Common.CLOSETAG;
+import cmark.Node.ListData;
+import cmark.Node.NodeType;
 
 typedef ParserOptions = {
     >InlineParser.InlineParserOptions,
@@ -25,7 +27,7 @@ class DocumentBehaviour implements IBlockBehaviour {
 }
 
 @:publicFields
-@:access(Parser)
+@:access(cmark.Parser)
 class ListBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(_, _) return 0;
@@ -55,7 +57,7 @@ class ListBehaviour implements IBlockBehaviour {
 }
 
 @:publicFields
-@:access(Parser)
+@:access(cmark.Parser)
 class BlockQuoteBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(parser:Parser, _) {
@@ -76,7 +78,7 @@ class BlockQuoteBehaviour implements IBlockBehaviour {
 }
 
 @:publicFields
-@:access(Parser)
+@:access(cmark.Parser)
 class ItemBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(parser:Parser, container:Node) {
@@ -119,7 +121,7 @@ class HorizontalRuleBehaviour implements IBlockBehaviour {
 }
 
 @:publicFields
-@:access(Parser)
+@:access(cmark.Parser)
 class CodeBlockBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(parser:Parser, container:Node) {
@@ -169,7 +171,7 @@ class CodeBlockBehaviour implements IBlockBehaviour {
 }
 
 @:publicFields
-@:access(Parser)
+@:access(cmark.Parser)
 class HtmlBlockBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(parser:Parser, container:Node) {
@@ -184,7 +186,7 @@ class HtmlBlockBehaviour implements IBlockBehaviour {
 }
 
 @:publicFields
-@:access(Parser)
+@:access(cmark.Parser)
 class ParagraphBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(parser:Parser, _) {
@@ -752,25 +754,15 @@ class Parser {
     static function parseListMarker(ln:String, offset:Int, indent:Int):ListData {
         var rest = ln.substr(offset);
         var spaces_after_marker;
-        var data:ListData = {
-            type: null,
-            tight: true,  // lists are tight by default
-            bulletChar: null,
-            start: null,
-            delimiter: null,
-            padding: 0,
-            markerOffset: indent
-        };
-        var match;
+        var match, data;
         if (reBulletListMarker.match(rest)) {
             match = reBulletListMarker.matched(0);
             spaces_after_marker = reBulletListMarker.matched(1).length;
-            data.type = Bullet;
-            data.bulletChar = reBulletListMarker.matched(0).charAt(0);
+            data = new ListData(Bullet, indent);
         } else if (reOrderedListMarker.match(rest)) {
             match = reOrderedListMarker.matched(0);
             spaces_after_marker = reOrderedListMarker.matched(3).length;
-            data.type = Ordered;
+            data = new ListData(Ordered, indent);
             data.start = Std.parseInt(reOrderedListMarker.matched(1));
             data.delimiter = reOrderedListMarker.matched(2);
         } else {

@@ -1,9 +1,11 @@
-import Common.ENTITY;
-import Common.ESCAPABLE;
-import Common.reHtmlTag;
-import Common.normalizeURI;
-import Common.decodeHTML;
-import Common.unescapeString;
+package cmark;
+
+import cmark.Common.ENTITY;
+import cmark.Common.ESCAPABLE;
+import cmark.Common.reHtmlTag;
+import cmark.Common.normalizeURI;
+import cmark.Common.decodeHTML;
+import cmark.Common.unescapeString;
 
 typedef InlineParserOptions = {
     var smart:Bool;

@@ -1,4 +1,6 @@
-import Common.escapeXml;
+package cmark;
+
+import cmark.Common.escapeXml;
 
 typedef HtmlRendererOptions = {
     var sourcepos:Bool;

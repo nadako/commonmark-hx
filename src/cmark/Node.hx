@@ -1,32 +1,35 @@
-enum NodeType {
-    Document;
-    List;
-    Item;
-    BlockQuote;
-    Header;
-    HorizontalRule;
-    CodeBlock;
-    HtmlBlock;
-    Paragraph;
-    Text;
-    Hardbreak;
-    Softbreak;
-    Code;
-    Link;
-    Image;
-    Emph;
-    Strong;
-    Html;
+package cmark;
+
+@:enum abstract NodeType(Int) to Int {
+    var Document       = 1;
+    var List           = 2;
+    var Item           = 3;
+    var BlockQuote     = 4;
+    var Header         = 5;
+    var HorizontalRule = 6;
+    var CodeBlock      = 7;
+    var HtmlBlock      = 8;
+    var Paragraph      = 9;
+    var Text           = 10;
+    var Hardbreak      = 11;
+    var Softbreak      = 12;
+    var Code           = 13;
+    var Link           = 14;
+    var Image          = 15;
+    var Emph           = 16;
+    var Strong         = 17;
+    var Html           = 18;
 }
 
-enum ListType {
-    Ordered;
-    Bullet;
+@:enum abstract ListType(Int) to Int {
+    var Ordered = 1;
+    var Bullet  = 2;
 }
 
 typedef SourcePos = Array<Array<Int>>;
 
-typedef ListData = {
+@:publicFields
+class ListData {
     var type:ListType;
     var tight:Bool;
     var start:Null<Int>;
@@ -34,6 +37,12 @@ typedef ListData = {
     var bulletChar:String;
     var markerOffset:Int;
     var padding:Int;
+    function new(type, indent) {
+        this.type = type;
+        this.markerOffset = indent;
+        this.padding = 0;
+        this.tight = true;
+    }
 }
 
 class Node {
