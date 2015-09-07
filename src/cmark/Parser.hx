@@ -759,6 +759,7 @@ class Parser {
             match = reBulletListMarker.matched(0);
             spaces_after_marker = reBulletListMarker.matched(1).length;
             data = new ListData(Bullet, indent);
+            data.bulletChar = reBulletListMarker.matched(0).charAt(0);
         } else if (reOrderedListMarker.match(rest)) {
             match = reOrderedListMarker.matched(0);
             spaces_after_marker = reOrderedListMarker.matched(3).length;
