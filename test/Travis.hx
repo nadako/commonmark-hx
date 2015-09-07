@@ -13,7 +13,8 @@ class Travis {
                 throw "Unknown TARGET: " + other;
         };
         Sys.setCwd("CommonMark");
-        Sys.command("python3", ["test/spec_tests.py", "--program", testProgram]);
+        var exitCode = Sys.command("python3", ["test/spec_tests.py", "--program", testProgram]);
+        Sys.exit(exitCode);
     }
 
     static function makeJS() {
