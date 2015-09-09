@@ -1,5 +1,7 @@
 language: haxe
 
+sudo: false
+
 addons:
   apt:
     packages:
