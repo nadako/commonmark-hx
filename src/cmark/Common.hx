@@ -113,15 +113,15 @@ class Common {
 
     static function decodeHTML_map(r:EReg):String {
         var str = r.matched(0);
-        if (str.substr(-1) != ";")
-            str += ";";
+        if (str.charCodeAt(str.length - 1) == ";".code)
+            str = str.substr(0, str.length - 1);
         if (str.charAt(1) == "#"){
             var s = str.substr(2);
             if (s.charAt(0) == "X" || s.charAt(0) == "x")
                 s = "0" + s;
             return decodeCodePoint(Std.parseInt(s));
         }
-        return Reflect.field(entityMap, str.substring(1, str.length - 1));
+        return Reflect.field(entityMap, str.substr(1));
     }
 
     static function replaceUnsafeChar(s:String):String {
