@@ -535,8 +535,10 @@ class Parser {
         lastMatchedContainer = container;
 
         // Check to see if we've hit 2nd blank line; if so break out of list:
-        if (blank && container.lastLineBlank)
+        if (blank && container.lastLineBlank) {
             breakOutOfLists(container);
+            container = tip;
+        }
 
         var matchedLeaf = container.type != Paragraph && blocks[container.type].acceptsLines();
         var starts = blockStarts;
