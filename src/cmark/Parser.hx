@@ -229,7 +229,7 @@ class Parser {
     var refmap:Map<String,InlineParser.Ref>;
     var options:ParserOptions;
 
-    static inline var CODE_INDENT = 4;    
+    static inline var CODE_INDENT = 4;
 
     static inline var C_NEWLINE = 10;
     static inline var C_GREATERTHAN = 62;
@@ -676,7 +676,7 @@ class Parser {
     // Break out of all containing lists, resetting the tip of the
     // document to the parent of the highest list, and finalizing
     // all the lists.  (This is used to implement the "two blank lines
-    // break of of all lists" feature.)
+    // break out of all lists" feature.)
     function breakOutOfLists(block:Node):Void {
         var b = block;
         var last_list = null;
