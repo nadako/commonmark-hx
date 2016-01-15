@@ -697,7 +697,7 @@ class Parser {
         column = nextNonspaceColumn;
     }
 
-    // Finalize and close any unmatched blocks. Returns true.
+    // Finalize and close any unmatched blocks.
     function closeUnmatchedBlocks():Void {
         if (allClosed)
             return;
