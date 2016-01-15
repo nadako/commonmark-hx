@@ -19,6 +19,8 @@ package cmark;
     var Emph           = 16;
     var Strong         = 17;
     var Html           = 18;
+    var CustomInline   = 19;
+    var CustomBlock    = 20;
 }
 
 @:enum abstract ListType(Int) to Int {
@@ -74,6 +76,8 @@ class Node {
     public var fenceChar:String;
     public var fenceLength:Int;
     public var fenceOffset:Int;
+    public var onEnter:String;
+    public var onExit:String;
 
     public function new(nodeType:NodeType, ?sourcepos:SourcePos) {
         this.type = nodeType;

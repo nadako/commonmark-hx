@@ -97,6 +97,12 @@ class HtmlRenderer {
                         out(node.literal);
                     }
 
+                case CustomInline:
+                    if (entering && node.onEnter != null && node.onEnter.length > 0)
+                        out(node.onEnter);
+                    else if (!entering && node.onExit != null && node.onExit.length > 0)
+                        out(node.onExit);
+
                 case Link:
                     if (entering) {
                         if (!(options.safe && potentiallyUnsafe(node.destination))) {
@@ -217,6 +223,14 @@ class HtmlRenderer {
                     } else {
                         out(node.literal);
                     }
+                    cr();
+
+                case CustomBlock:
+                    cr();
+                    if (entering && node.onEnter != null && node.onEnter.length > 0)
+                       out(node.onEnter);
+                    else if (!entering && node.onExit != null && node.onExit.length > 0)
+                       out(node.onExit);
                     cr();
 
                 case ThematicBreak:
