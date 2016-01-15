@@ -776,7 +776,6 @@ class Parser {
 
         // we've got a match! advance offset and calculate padding
         parser.advanceNextNonspace(); // to start of marker
-        var markerStartCol = parser.column;
         parser.advanceOffset(match.length, true); // to end of marker
         var spacesStartCol = parser.column;
         var spacesStartOffset = parser.offset;
