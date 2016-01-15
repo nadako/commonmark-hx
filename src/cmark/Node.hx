@@ -82,7 +82,7 @@ class Node {
     public function new(nodeType:NodeType, ?sourcepos:SourcePos) {
         this.type = nodeType;
         this.sourcepos = sourcepos;
-        listData = new ListData(null, null);
+        listData = new ListData(Bullet, 0);
         lastLineBlank = false;
         open = true;
         isFenced = false;
