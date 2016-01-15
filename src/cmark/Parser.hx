@@ -109,10 +109,10 @@ class HeadingBehaviour implements IBlockBehaviour {
 }
 
 @:publicFields
-class HorizontalRuleBehaviour implements IBlockBehaviour {
+class ThematicBreakBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(_, _) {
-        // an hrule can never container > 1 line, so fail to match:
+        // a thematic break can never container > 1 line, so fail to match:
         return 1;
     };
     function finalize(_, _) {};
@@ -261,7 +261,7 @@ class Parser {
     static var reCodeFence = ~/^`{3,}(?!.*`)|^~{3,}(?!.*~)/;
     static var reClosingCodeFence = ~/^(?:`{3,}|~{3,})(?= *$)/;
     static var reSetextHeadingLine = ~/^(?:=+|-+) *$/;
-    static var reHrule = ~/^(?:(?:\* *){3,}|(?:_ *){3,}|(?:- *){3,}) *$/;
+    static var reThematicBreak = ~/^(?:(?:\* *){3,}|(?:_ *){3,}|(?:- *){3,}) *$/;
     static var reBulletListMarker = ~/^[*+-]( +|$)/;
     static var reOrderedListMarker = ~/^(\d{1,9})([.)])( +|$)/;
     static var reNonSpace = ~/[^ \t\r\n]/;
@@ -289,7 +289,7 @@ class Parser {
         BlockQuote => new BlockQuoteBehaviour(),
         Item => new ItemBehaviour(),
         Heading => new HeadingBehaviour(),
-        HorizontalRule => new HorizontalRuleBehaviour(),
+        ThematicBreak => new ThematicBreakBehaviour(),
         CodeBlock => new CodeBlockBehaviour(),
         HtmlBlock => new HtmlBlockBehaviour(),
         Paragraph => new ParagraphBehaviour(),
@@ -388,9 +388,9 @@ class Parser {
 
         // hrule
         function(parser:Parser, container:Node):Int {
-            if (!parser.indented && reHrule.match(parser.currentLine.substr(parser.nextNonspace))) {
+            if (!parser.indented && reThematicBreak.match(parser.currentLine.substr(parser.nextNonspace))) {
                 parser.closeUnmatchedBlocks();
-                parser.addChild(HorizontalRule, parser.nextNonspace);
+                parser.addChild(ThematicBreak, parser.nextNonspace);
                 parser.advanceOffset(parser.currentLine.length - parser.offset, false);
                 return 2;
             } else {

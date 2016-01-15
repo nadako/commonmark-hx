@@ -219,7 +219,7 @@ class HtmlRenderer {
                     }
                     cr();
 
-                case HorizontalRule:
+                case ThematicBreak:
                     cr();
                     out(tag('hr', attrs, true));
                     cr();

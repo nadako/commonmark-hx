@@ -6,7 +6,7 @@ package cmark;
     var Item           = 3;
     var BlockQuote     = 4;
     var Heading        = 5;
-    var HorizontalRule = 6;
+    var ThematicBreak  = 6;
     var CodeBlock      = 7;
     var HtmlBlock      = 8;
     var Paragraph      = 9;
