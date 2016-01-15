@@ -371,7 +371,7 @@ class Parser {
 
         // Setext heading
         function(parser:Parser, container:Node):Int {
-            if (!parser.indented && container.type == Paragraph && (container.string_content.indexOf('\n') == container.string_content.length - 1) && (reSetextHeadingLine.match(parser.currentLine.substring(parser.nextNonspace)))) {
+            if (!parser.indented && container.type == Paragraph && reSetextHeadingLine.match(parser.currentLine.substring(parser.nextNonspace))) {
                 parser.closeUnmatchedBlocks();
                 var heading = new Node(Heading, container.sourcepos);
                 heading.level = reSetextHeadingLine.matched(0).charAt(0) == '=' ? 1 : 2;
