@@ -78,6 +78,7 @@ class Node {
     public function new(nodeType:NodeType, ?sourcepos:SourcePos) {
         this.type = nodeType;
         this.sourcepos = sourcepos;
+        listData = new ListData(null, null);
         lastLineBlank = false;
         open = true;
         isFenced = false;
