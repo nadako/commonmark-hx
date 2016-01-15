@@ -742,16 +742,21 @@ class Parser {
         var i = 0;
         var cols = 0;
         var currentLine = this.currentLine;
-        while (columns ? (cols < count) : (i < count)) {
-            if (currentLine.charAt(this.offset + i) == '\t') {
-                cols += (4 - ((this.column + cols) % 4));
+        var charsToTab;
+        var c;
+        while (count > 0 && (c = currentLine.charAt(this.offset)) != null) {
+            if (c == "\t") {
+                charsToTab = 4 - (this.column % 4);
+                this.column += charsToTab;
+                this.offset += 1;
+                count -= (columns ? charsToTab : 1);
             } else {
                 cols += 1;
+                this.offset += 1;
+                this.column += 1; // assume ascii; block starts are ascii
+                count -= 1;
             }
-            i++;
         }
-        this.offset += i;
-        this.column += cols;
     }
 
     // Parse a list marker and return data on the marker (type,
