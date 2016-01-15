@@ -88,7 +88,7 @@ class InlineParser {
             '\\((' + ESCAPED_CHAR + '|[^)\\x00])*\\))', "");
 
     static var reLinkDestinationBraces = new EReg(
-        '^(?:[<](?:[^<>\\n\\\\\\x00]' + '|' + ESCAPED_CHAR + '|' + '\\\\)*[>])', "");
+        '^(?:[<](?:[^ <>\\t\\n\\\\\\x00]' + '|' + ESCAPED_CHAR + '|' + '\\\\)*[>])', "");
 
     static inline var REG_CHAR = '[^\\\\()\\x00-\\x20]';
     static var IN_PARENS_NOSP = '\\((' + REG_CHAR + '|' + ESCAPED_CHAR + '|\\\\)*\\)';
