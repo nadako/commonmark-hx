@@ -18,7 +18,7 @@ package cmark;
     var Image          = 15;
     var Emph           = 16;
     var Strong         = 17;
-    var Html           = 18;
+    var HtmlInline     = 18;
     var CustomInline   = 19;
     var CustomBlock    = 20;
 }

@@ -90,7 +90,7 @@ class HtmlRenderer {
                 case Strong:
                     out(tag(entering ? 'strong' : '/strong'));
 
-                case Html:
+                case HtmlInline:
                     if (options.safe) {
                         out('<!-- raw HTML omitted -->');
                     } else {

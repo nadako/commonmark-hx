@@ -31,7 +31,7 @@ typedef Ref = {
 }
 
 class InlineParser {
-    
+
     static var normalizeReferenceRe = ~/[ \t\r\n]+/g;
     static function normalizeReference(s:String):String {
         s = s.substring(1, s.length - 1); // get rid of [ and ]
@@ -115,7 +115,7 @@ class InlineParser {
         block.string_content = null; // allow raw string to be garbage collected
         processEmphasis(null);
     }
-    
+
     // Parse the next inline element in subject, advancing subject position.
     // On success, add the result to block's children and return true.
     // On failure, return false.
@@ -351,7 +351,7 @@ class InlineParser {
         var m = match(reHtmlTag);
         if (m == null)
             return false;
-        var node = new Node(Html);
+        var node = new Node(HtmlInline);
         node.literal = m;
         block.appendChild(node);
         return true;
