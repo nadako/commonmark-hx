@@ -262,8 +262,8 @@ class Parser {
     static var reClosingCodeFence = ~/^(?:`{3,}|~{3,})(?= *$)/;
     static var reSetextHeadingLine = ~/^(?:=+|-+) *$/;
     static var reThematicBreak = ~/^(?:(?:\* *){3,}|(?:_ *){3,}|(?:- *){3,}) *$/;
-    static var reBulletListMarker = ~/^[*+-]([ \t]+|$)/;
-    static var reOrderedListMarker = ~/^(\d{1,9})([.)])( +|$)/;
+    static var reBulletListMarker = ~/^[*+-]/;
+    static var reOrderedListMarker = ~/^(\d{1,9})([.)])/;
     static var reNonSpace = ~/[^ \t\r\n]/;
 
     static function peek(ln:String, pos:Int):Int {
@@ -400,16 +400,9 @@ class Parser {
 
         // list item
         function(parser:Parser, container:Node):Int {
-            var data = parseListMarker(parser.currentLine, parser.nextNonspace, parser.indent);
-            if (data != null && (!parser.indented || container.type == List)) {
+            var data;
+            if ((!parser.indented || container.type == List) && (data = parseListMarker(parser)) != null) {
                 parser.closeUnmatchedBlocks();
-                parser.advanceNextNonspace();
-                // recalculate data.padding, taking into account tabs:
-                var i = parser.column;
-                parser.advanceOffset(data.padding, false);
-                // Don't reduce padding < 2.  This could happen, without
-                // this check, in a list with an empty first line:
-                data.padding = (parser.column - i) < 2 ? 2 : (parser.column - i);
 
                 // add the list if needed
                 if (parser.tip.type != List || !(listsMatch(container.listData, data))) {
@@ -761,29 +754,49 @@ class Parser {
 
     // Parse a list marker and return data on the marker (type,
     // start, delimiter, bullet character, padding) or null.
-    static function parseListMarker(ln:String, offset:Int, indent:Int):ListData {
-        var rest = ln.substr(offset);
-        var spaces_after_marker;
-        var match, data;
+    static function parseListMarker(parser:Parser):ListData {
+        var rest = parser.currentLine.substr(parser.nextNonspace);
+        var data, match;
         if (reBulletListMarker.match(rest)) {
-            match = reBulletListMarker.matched(0);
-            spaces_after_marker = reBulletListMarker.matched(1).length;
-            data = new ListData(Bullet, indent);
+            data = new ListData(Bullet, parser.indent);
             data.bulletChar = reBulletListMarker.matched(0).charAt(0);
+            match = reBulletListMarker.matched(0);
         } else if (reOrderedListMarker.match(rest)) {
-            match = reOrderedListMarker.matched(0);
-            spaces_after_marker = reOrderedListMarker.matched(3).length;
-            data = new ListData(Ordered, indent);
+            data = new ListData(Ordered, parser.indent);
             data.start = Std.parseInt(reOrderedListMarker.matched(1));
             data.delimiter = reOrderedListMarker.matched(2);
+            match = reOrderedListMarker.matched(0);
         } else {
             return null;
         }
-        var blank_item = match.length == rest.length;
-        if (spaces_after_marker >= 5 || spaces_after_marker < 1 || blank_item)
-            data.padding = match.length - spaces_after_marker + 1;
-        else
-            data.padding = match.length;
+        // make sure we have spaces after
+        var nextc = peek(parser.currentLine, parser.nextNonspace + match.length);
+        if (!(nextc == -1 || nextc == "\t".code || nextc == " ".code)) {
+            return null;
+        }
+
+        // we've got a match! advance offset and calculate padding
+        parser.advanceNextNonspace(); // to start of marker
+        var markerStartCol = parser.column;
+        parser.advanceOffset(match.length, true); // to end of marker
+        var spacesStartCol = parser.column;
+        var spacesStartOffset = parser.offset;
+        do {
+            parser.advanceOffset(1, true);
+            nextc = peek(parser.currentLine, parser.offset);
+        } while (parser.column - spacesStartCol < 5 && (nextc == " ".code || nextc == "\t".code));
+        var blank_item = peek(parser.currentLine, parser.offset) == -1;
+        var spaces_after_marker = parser.column - spacesStartCol;
+        if (spaces_after_marker >= 5 || spaces_after_marker < 1 || blank_item) {
+            data.padding = match.length + 1;
+            parser.column = spacesStartCol;
+            parser.offset = spacesStartOffset;
+            if (peek(parser.currentLine, parser.offset) == C_SPACE) {
+                parser.advanceOffset(1, true);
+            }
+        } else {
+            data.padding = match.length + spaces_after_marker;
+        }
         return data;
     }
 

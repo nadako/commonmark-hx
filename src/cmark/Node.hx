@@ -43,7 +43,7 @@ class ListData {
         this.type = type;
         this.markerOffset = indent;
         this.padding = 0;
-        this.tight = true;
+        this.tight = true; // lists are tight by default
     }
 }
 
