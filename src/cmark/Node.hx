@@ -5,7 +5,7 @@ package cmark;
     var List           = 2;
     var Item           = 3;
     var BlockQuote     = 4;
-    var Header         = 5;
+    var Heading        = 5;
     var HorizontalRule = 6;
     var CodeBlock      = 7;
     var HtmlBlock      = 8;
@@ -104,7 +104,7 @@ class Node {
                | List
                | Item
                | Paragraph
-               | Header
+               | Heading
                | Emph
                | Strong
                | Link

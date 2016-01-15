@@ -97,10 +97,10 @@ class ItemBehaviour implements IBlockBehaviour {
 }
 
 @:publicFields
-class HeaderBehaviour implements IBlockBehaviour {
+class HeadingBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(_, _) {
-        // a header can never container > 1 line, so fail to match:
+        // a heading can never container > 1 line, so fail to match:
         return 1;
     }
     function finalize(_, _) {};
@@ -257,10 +257,10 @@ class Parser {
         ~/>/,
         ~/\]\]>/
     ];
-    static var reATXHeaderMarker = ~/^#{1,6}(?: +|$)/;
+    static var reATXHeadingMarker = ~/^#{1,6}(?: +|$)/;
     static var reCodeFence = ~/^`{3,}(?!.*`)|^~{3,}(?!.*~)/;
     static var reClosingCodeFence = ~/^(?:`{3,}|~{3,})(?= *$)/;
-    static var reSetextHeaderLine = ~/^(?:=+|-+) *$/;
+    static var reSetextHeadingLine = ~/^(?:=+|-+) *$/;
     static var reHrule = ~/^(?:(?:\* *){3,}|(?:_ *){3,}|(?:- *){3,}) *$/;
     static var reBulletListMarker = ~/^[*+-]( +|$)/;
     static var reOrderedListMarker = ~/^(\d{1,9})([.)])( +|$)/;
@@ -288,7 +288,7 @@ class Parser {
         List => new ListBehaviour(),
         BlockQuote => new BlockQuoteBehaviour(),
         Item => new ItemBehaviour(),
-        Header => new HeaderBehaviour(),
+        Heading => new HeadingBehaviour(),
         HorizontalRule => new HorizontalRuleBehaviour(),
         CodeBlock => new CodeBlockBehaviour(),
         HtmlBlock => new HtmlBlockBehaviour(),
@@ -316,14 +316,14 @@ class Parser {
             }
         },
 
-        // ATX header
+        // ATX heading
         function(parser:Parser, container:Node):Int {
-            if (!parser.indented && (reATXHeaderMarker.match(parser.currentLine.substring(parser.nextNonspace)))) {
+            if (!parser.indented && (reATXHeadingMarker.match(parser.currentLine.substring(parser.nextNonspace)))) {
                 parser.advanceNextNonspace();
-                parser.advanceOffset(reATXHeaderMarker.matched(0).length, false);
+                parser.advanceOffset(reATXHeadingMarker.matched(0).length, false);
                 parser.closeUnmatchedBlocks();
-                var container = parser.addChild(Header, parser.nextNonspace);
-                container.level = StringTools.trim(reATXHeaderMarker.matched(0)).length; // number of #s
+                var container = parser.addChild(Heading, parser.nextNonspace);
+                container.level = StringTools.trim(reATXHeadingMarker.matched(0)).length; // number of #s
                 // remove trailing ###s:
                 container.string_content = ~/ +#+ *$/.replace(~/^ *#+ *$/.replace(parser.currentLine.substr(parser.offset), ''), '');
                 parser.advanceOffset(parser.currentLine.length - parser.offset);
@@ -369,16 +369,16 @@ class Parser {
             return 0;
         },
 
-        // Setext header
+        // Setext heading
         function(parser:Parser, container:Node):Int {
-            if (!parser.indented && container.type == Paragraph && (container.string_content.indexOf('\n') == container.string_content.length - 1) && (reSetextHeaderLine.match(parser.currentLine.substring(parser.nextNonspace)))) {
+            if (!parser.indented && container.type == Paragraph && (container.string_content.indexOf('\n') == container.string_content.length - 1) && (reSetextHeadingLine.match(parser.currentLine.substring(parser.nextNonspace)))) {
                 parser.closeUnmatchedBlocks();
-                var header = new Node(Header, container.sourcepos);
-                header.level = reSetextHeaderLine.matched(0).charAt(0) == '=' ? 1 : 2;
-                header.string_content = container.string_content;
-                container.insertAfter(header);
+                var heading = new Node(Heading, container.sourcepos);
+                heading.level = reSetextHeadingLine.matched(0).charAt(0) == '=' ? 1 : 2;
+                heading.string_content = container.string_content;
+                container.insertAfter(heading);
                 container.unlink();
-                parser.tip = header;
+                parser.tip = heading;
                 parser.advanceOffset(parser.currentLine.length - parser.offset, false);
                 return 2;
             } else {
@@ -644,7 +644,7 @@ class Parser {
         while ((event = walker.next()) != null) {
             var node = event.node;
             var t = node.type;
-            if (!event.entering && (t == Paragraph || t == Header))
+            if (!event.entering && (t == Paragraph || t == Heading))
                 inlineParser.parse(node);
         }
     }

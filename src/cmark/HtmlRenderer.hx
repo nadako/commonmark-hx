@@ -19,7 +19,7 @@ class HtmlRenderer {
         if (options == null)
             options = {sourcepos: false, safe: false};
         this.options = options;
-        
+
         softbreak = '\n'; // by default, soft breaks are rendered as newlines in HTML
         // set to "<br />" to make them hard breaks
         // set to " " if you want to ignore line wrapping in source
@@ -189,7 +189,7 @@ class HtmlRenderer {
                         cr();
                     }
 
-                case Header:
+                case Heading:
                     tagname = 'h' + node.level;
                     if (entering) {
                         cr();
