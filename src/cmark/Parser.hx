@@ -407,7 +407,9 @@ class Parser {
                 // recalculate data.padding, taking into account tabs:
                 var i = parser.column;
                 parser.advanceOffset(data.padding, false);
-                data.padding = parser.column - i;
+                // Don't reduce padding < 2.  This could happen, without
+                // this check, in a list with an empty first line:
+                data.padding = (parser.column - i) < 2 ? 2 : (parser.column - i);
 
                 // add the list if needed
                 if (parser.tip.type != List || !(listsMatch(container.listData, data))) {
@@ -498,6 +500,7 @@ class Parser {
         var container = doc;
         oldtip = tip;
         offset = 0;
+        column = 0;
         lineNumber += 1;
 
         // replace NUL characters for security
