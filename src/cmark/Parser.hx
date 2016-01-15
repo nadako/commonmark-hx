@@ -262,7 +262,7 @@ class Parser {
     static var reClosingCodeFence = ~/^(?:`{3,}|~{3,})(?= *$)/;
     static var reSetextHeadingLine = ~/^(?:=+|-+) *$/;
     static var reThematicBreak = ~/^(?:(?:\* *){3,}|(?:_ *){3,}|(?:- *){3,}) *$/;
-    static var reBulletListMarker = ~/^[*+-]( +|$)/;
+    static var reBulletListMarker = ~/^[*+-]([ \t]+|$)/;
     static var reOrderedListMarker = ~/^(\d{1,9})([.)])( +|$)/;
     static var reNonSpace = ~/[^ \t\r\n]/;
 
