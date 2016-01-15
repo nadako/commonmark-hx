@@ -534,7 +534,6 @@ class InlineParser {
         } else {
             // Next, see if there's a link label
             var savepos = pos;
-            spnl();
             var beforelabel = pos;
             var reflabel;
             var n = parseLinkLabel();
