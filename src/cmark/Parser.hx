@@ -732,7 +732,6 @@ class Parser {
     }
 
     function advanceOffset(count:Int, columns = false):Void {
-        var i = 0;
         var cols = 0;
         var currentLine = this.currentLine;
         var charsToTab;
