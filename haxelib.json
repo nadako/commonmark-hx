@@ -1,0 +1,8 @@
+{
+    "name": "commonmark",
+    "version": "0.24.0",
+    "releasenote": "Initial release",
+    "license": "MIT",
+    "classPath": "src",
+    "contributors": ["nadako"]
+}
