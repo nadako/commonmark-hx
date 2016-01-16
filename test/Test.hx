@@ -18,9 +18,9 @@ class Test {
     }
 
     static function run(inp:String):String {
-        var p = new cmark.Parser();
+        var p = new commonmark.Parser();
         var ast = p.parse(inp);
-        var ren = new cmark.HtmlRenderer();
+        var ren = new commonmark.HtmlRenderer();
         return ren.render(ast);
     }
 }

@@ -1,4 +1,4 @@
-package cmark;
+package commonmark;
 
 @:enum abstract NodeType(Int) to Int {
     var Document       = 1;

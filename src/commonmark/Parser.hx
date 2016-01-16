@@ -1,10 +1,10 @@
-package cmark;
+package commonmark;
 
-import cmark.Common.unescapeString;
-import cmark.Common.OPENTAG;
-import cmark.Common.CLOSETAG;
-import cmark.Node.ListData;
-import cmark.Node.NodeType;
+import commonmark.Common.unescapeString;
+import commonmark.Common.OPENTAG;
+import commonmark.Common.CLOSETAG;
+import commonmark.Node.ListData;
+import commonmark.Node.NodeType;
 
 typedef ParserOptions = {
     >InlineParser.InlineParserOptions,
@@ -27,7 +27,7 @@ class DocumentBehaviour implements IBlockBehaviour {
 }
 
 @:publicFields
-@:access(cmark.Parser)
+@:access(commonmark.Parser)
 class ListBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(_, _) return 0;
@@ -57,7 +57,7 @@ class ListBehaviour implements IBlockBehaviour {
 }
 
 @:publicFields
-@:access(cmark.Parser)
+@:access(commonmark.Parser)
 class BlockQuoteBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(parser:Parser, _) {
@@ -78,7 +78,7 @@ class BlockQuoteBehaviour implements IBlockBehaviour {
 }
 
 @:publicFields
-@:access(cmark.Parser)
+@:access(commonmark.Parser)
 class ItemBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(parser:Parser, container:Node) {
@@ -121,7 +121,7 @@ class ThematicBreakBehaviour implements IBlockBehaviour {
 }
 
 @:publicFields
-@:access(cmark.Parser)
+@:access(commonmark.Parser)
 class CodeBlockBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(parser:Parser, container:Node) {
@@ -171,7 +171,7 @@ class CodeBlockBehaviour implements IBlockBehaviour {
 }
 
 @:publicFields
-@:access(cmark.Parser)
+@:access(commonmark.Parser)
 class HtmlBlockBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(parser:Parser, container:Node) {
@@ -186,7 +186,7 @@ class HtmlBlockBehaviour implements IBlockBehaviour {
 }
 
 @:publicFields
-@:access(cmark.Parser)
+@:access(commonmark.Parser)
 class ParagraphBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(parser:Parser, _) {

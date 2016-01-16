@@ -13,8 +13,8 @@ This is a port the [JavaScript reference implementation](https://github.com/jgm/
 This is similar to the original JS version
 
 ```haxe
-var parser = new cmark.Parser();
+var parser = new commonmark.Parser();
 var ast = parser.parse("# Hello");
-var writer = new cmark.HtmlRenderer();
+var writer = new commonmark.HtmlRenderer();
 var html = writer.render(ast);
 ```
