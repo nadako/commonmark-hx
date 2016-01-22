@@ -82,8 +82,11 @@ class BlockQuoteBehaviour implements IBlockBehaviour {
 class ItemBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(parser:Parser, container:Node) {
-        if (parser.blank && container.firstChild != null) {
-            parser.advanceNextNonspace();
+        if (parser.blank) {
+            if (container.firstChild == null)
+                return 1; // Blank line after empty list item
+            else
+                parser.advanceNextNonspace();
         } else if (parser.indent >= container.listData.markerOffset + container.listData.padding) {
             parser.advanceOffset(container.listData.markerOffset + container.listData.padding, true);
         } else {
