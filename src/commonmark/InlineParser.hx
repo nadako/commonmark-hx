@@ -66,7 +66,12 @@ class InlineParser {
     static var reInitialSpace = ~/^ */;
     static var reFinalSpace = ~/ *$/;
     static var reWhitespaceChar = ~/^\s/;
-    static var rePunctuation = ~/^[\u2000-\u206F\u2E00-\u2E7F\\'!"#\$%&\(\)\*\+,\-\.\/:;<=>\?@\[\]\^_`\{\|\}~]/;
+    static var rePunctuation =
+        #if neko
+        ~/^[\x{2000}-\x{206F}\x{2E00}-\x{2E7F}\\'!"#\$%&\(\)\*\+,\-\.\/:;<=>\?@\[\]\^_`\{\|\}~]/u;
+        #else
+        ~/^[\u2000-\u206F\u2E00-\u2E7F\\'!"#\$%&\(\)\*\+,\-\.\/:;<=>\?@\[\]\^_`\{\|\}~]/u;
+        #end
     static var reEntityHere = new EReg('^' + ENTITY, 'i');
     static var reEscapable = new EReg('^' + ESCAPABLE, "");
     static var reTicks = ~/`+/;
@@ -93,7 +98,13 @@ class InlineParser {
     static inline var REG_CHAR = '[^\\\\()\\x00-\\x20]';
     static var IN_PARENS_NOSP = '\\((' + REG_CHAR + '|' + ESCAPED_CHAR + '|\\\\)*\\)';
     static var reLinkDestination = new EReg('^(?:' + REG_CHAR + '+|' + ESCAPED_CHAR + '|\\\\|' + IN_PARENS_NOSP + ')*', "");
-    static var reLinkLabel = new EReg('^\\[(?:[^\\\\\\[\\]]|' + ESCAPED_CHAR + '|\\\\){0,1000}\\]', "");
+    static var reLinkLabel =
+        #if neko
+        new EReg('^\\[(?:[^\\\\\\[\\]]|' + ESCAPED_CHAR + '|\\\\){0,700}\\]', "");
+        #else
+        new EReg('^\\[(?:[^\\\\\\[\\]]|' + ESCAPED_CHAR + '|\\\\){0,1000}\\]', "");
+        #end
+
     static var reSpaceAtEndOfLine = ~/^ *(?:\n|$)/;
 
     public function new(?options:InlineParserOptions) {
@@ -634,7 +645,7 @@ class InlineParser {
     // Attempt to parse a link label, returning number of characters parsed.
     function parseLinkLabel():Int {
         var m = match(reLinkLabel);
-        if (m == null || m.length > 1001)
+        if (m == null || m.length > #if neko 701 #else 1001 #end)
             return 0;
         else
             return m.length;
