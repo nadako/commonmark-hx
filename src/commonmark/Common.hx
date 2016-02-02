@@ -101,16 +101,16 @@ class Common {
         if (decodeMap.exists(key))
             codePoint = decodeMap[key];
 
-        var output = "";
+        var output = new StringBuf();
 
         if (codePoint > 0xFFFF) {
             codePoint -= 0x10000;
-            output += String.fromCharCode(codePoint >>> 10 & 0x3FF | 0xD800);
+            output.addChar(codePoint >>> 10 & 0x3FF | 0xD800);
             codePoint = 0xDC00 | codePoint & 0x3FF;
         }
 
-        output += String.fromCharCode(codePoint);
-        return output;
+        output.addChar(codePoint);
+        return output.toString();
     }
 
     static function decodeHTML_map(r:EReg):String {
