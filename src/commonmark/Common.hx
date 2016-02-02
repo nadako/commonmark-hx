@@ -165,7 +165,7 @@ class Common {
             ii++;
             var code = string.charCodeAt(i);
 
-            if (code == 0x25 /* % */ && i + 2 < l) {
+            if (code == "%".code && i + 2 < l) {
                 if (~/^[0-9a-f]{2}$/i.match(string.substring(i + 1, i + 3))) {
                     result += string.substring(i, i + 3);
                     ii += 2;
