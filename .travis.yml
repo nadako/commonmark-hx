@@ -27,7 +27,7 @@ matrix:
             - mono-devel
             - mono-mcs
 
-   - env: TARGET=neko
+    - env: TARGET=neko
 
 install:
   - git clone https://github.com/jgm/CommonMark
