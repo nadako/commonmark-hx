@@ -25,8 +25,6 @@ class HtmlRenderer {
         // set to " " if you want to ignore line wrapping in source
     }
 
-    static inline function escape(s, p) return escapeXml(s, p);
-
     static inline function potentiallyUnsafe(url:String) {
         return reUnsafeProtocol.match(url) && !reSafeDataProtocol.match(url);
     }
@@ -49,7 +47,6 @@ class HtmlRenderer {
             }
             lastOut = s;
         };
-        var esc = escape;
         var cr = function() {
             if (lastOut != '\n') {
                 buffer += '\n';
@@ -75,7 +72,7 @@ class HtmlRenderer {
 
             switch (node.type) {
                 case Text:
-                    out(esc(node.literal, false));
+                    out(escapeXml(node.literal, false));
 
                 case Softbreak:
                     out(this.softbreak);
@@ -106,10 +103,10 @@ class HtmlRenderer {
                 case Link:
                     if (entering) {
                         if (!(options.safe && potentiallyUnsafe(node.destination))) {
-                            attrs.push(['href', esc(node.destination, true)]);
+                            attrs.push(['href', escapeXml(node.destination, true)]);
                         }
                         if (node.title != null && node.title.length > 0)
-                            attrs.push(['title', esc(node.title, true)]);
+                            attrs.push(['title', escapeXml(node.title, true)]);
                         out(tag('a', attrs));
                     } else {
                         out(tag('/a'));
@@ -122,7 +119,7 @@ class HtmlRenderer {
                                  potentiallyUnsafe(node.destination)) {
                                 out('<img src="" alt="');
                             } else {
-                                out('<img src="' + esc(node.destination, true) +
+                                out('<img src="' + escapeXml(node.destination, true) +
                                     '" alt="');
                             }
                         }
@@ -131,13 +128,13 @@ class HtmlRenderer {
                         disableTags -= 1;
                         if (disableTags == 0) {
                             if (node.title != null && node.title.length > 0)
-                                out('" title="' + esc(node.title, true));
+                                out('" title="' + escapeXml(node.title, true));
                             out('" />');
                         }
                     }
 
                 case Code:
-                    out(tag('code') + esc(node.literal, false) + tag('/code'));
+                    out(tag('code') + escapeXml(node.literal, false) + tag('/code'));
 
                 case Document:
 
@@ -208,11 +205,11 @@ class HtmlRenderer {
                 case CodeBlock:
                     info_words = node.info != null ? ~/\s+/g.split(node.info) : [];
                     if (info_words.length > 0 && info_words[0].length > 0) {
-                        attrs.push(['class', 'language-' + esc(info_words[0], true)]);
+                        attrs.push(['class', 'language-' + escapeXml(info_words[0], true)]);
                     }
                     cr();
                     out(tag('pre') + tag('code', attrs));
-                    out(esc(node.literal, false));
+                    out(escapeXml(node.literal, false));
                     out(tag('/code') + tag('/pre'));
                     cr();
 
