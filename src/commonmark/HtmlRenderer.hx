@@ -39,20 +39,21 @@ class HtmlRenderer {
         var lastOut = "\n";
         var disableTags = 0;
         var grandparent;
-        var out = function(s:String) {
-            if (disableTags > 0) {
+
+        inline function out(s:String) {
+            if (disableTags > 0)
                 buffer += reHtmlTag.replace(s, '');
-            } else {
+            else
                 buffer += s;
-            }
             lastOut = s;
-        };
-        var cr = function() {
+        }
+
+        inline function cr() {
             if (lastOut != '\n') {
                 buffer += '\n';
                 lastOut = '\n';
             }
-        };
+        }
 
         var options = this.options;
 
