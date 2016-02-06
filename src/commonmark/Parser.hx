@@ -737,14 +737,14 @@ class Parser {
     function advanceOffset(count:Int, columns = false):Void {
         var cols = 0;
         var currentLine = this.currentLine;
-        var charsToTab;
         var c;
         while (count > 0 && (c = currentLine.charAt(this.offset)) != null) {
             if (c == "\t") {
-                charsToTab = 4 - (this.column % 4);
-                this.column += charsToTab;
-                this.offset += 1;
-                count -= (columns ? charsToTab : 1);
+                var charsToTab = 4 - (this.column % 4);
+                var charsToAdvance = charsToTab > count ? count : charsToTab;
+                this.column += charsToAdvance;
+                this.offset += charsToAdvance < charsToTab ? 0 : 1;
+                count -= (columns ? charsToAdvance : 1);
             } else {
                 cols += 1;
                 this.offset += 1;
