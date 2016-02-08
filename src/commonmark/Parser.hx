@@ -65,8 +65,8 @@ class BlockQuoteBehaviour implements IBlockBehaviour {
         if (!parser.indented && Parser.peek(ln, parser.nextNonspace) == Parser.C_GREATERTHAN) {
             parser.advanceNextNonspace();
             parser.advanceOffset(1, false);
-            if (Parser.peek(ln, parser.offset) == Parser.C_SPACE)
-                parser.offset++;
+            if (Parser.isSpaceOrTab(Parser.peek(ln, parser.offset)))
+                parser.advanceOffset(1, true);
         } else {
             return 1;
         }
@@ -139,8 +139,8 @@ class CodeBlockBehaviour implements IBlockBehaviour {
             } else {
                 // skip optional spaces of fence offset
                 var i = container.fenceOffset;
-                while (i > 0 && Parser.peek(ln, parser.offset) == Parser.C_SPACE) {
-                    parser.advanceOffset(1, false);
+                while (i > 0 && Parser.isSpaceOrTab(Parser.peek(ln, parser.offset))) {
+                    parser.advanceOffset(1, true);
                     i--;
                 }
             }
@@ -270,6 +270,10 @@ class Parser {
     static var reOrderedListMarker = ~/^(\d{1,9})([.)])/;
     static var reNonSpace = ~/[^ \t\r\n]/;
 
+    static inline function isSpaceOrTab(c:Int):Bool {
+        return c == " ".code || c == "\t".code;
+    }
+
     static function peek(ln:String, pos:Int):Int {
         if (pos < ln.length)
             return ln.charCodeAt(pos);
@@ -310,8 +314,8 @@ class Parser {
                 parser.advanceNextNonspace();
                 parser.advanceOffset(1, false);
                 // optional following space
-                if (peek(parser.currentLine, parser.offset) == C_SPACE)
-                    parser.advanceOffset(1, false);
+                if (isSpaceOrTab(peek(parser.currentLine, parser.offset)))
+                    parser.advanceOffset(1, true);
                 parser.closeUnmatchedBlocks();
                 parser.addChild(BlockQuote, parser.nextNonspace);
                 return 1;
@@ -796,14 +800,14 @@ class Parser {
         do {
             parser.advanceOffset(1, true);
             nextc = peek(parser.currentLine, parser.offset);
-        } while (parser.column - spacesStartCol < 5 && (nextc == " ".code || nextc == "\t".code));
+        } while (parser.column - spacesStartCol < 5 && isSpaceOrTab(nextc));
         var blank_item = peek(parser.currentLine, parser.offset) == -1;
         var spaces_after_marker = parser.column - spacesStartCol;
         if (spaces_after_marker >= 5 || spaces_after_marker < 1 || blank_item) {
             data.padding = match.length + 1;
             parser.column = spacesStartCol;
             parser.offset = spacesStartOffset;
-            if (peek(parser.currentLine, parser.offset) == C_SPACE) {
+            if (isSpaceOrTab(peek(parser.currentLine, parser.offset))) {
                 parser.advanceOffset(1, true);
             }
         } else {
