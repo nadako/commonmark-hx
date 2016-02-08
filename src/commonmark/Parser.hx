@@ -226,6 +226,7 @@ class Parser {
     var indent:Int;
     var indented:Bool;
     var blank:Bool;
+    var partiallyConsumedTab:Bool;
     var allClosed:Bool;
     var lastMatchedContainer:Node;
     var lastLineLength:Int;
@@ -455,6 +456,7 @@ class Parser {
         indent = 0;
         indented = false;
         blank = false;
+        partiallyConsumedTab = false;
         allClosed = true;
         lastMatchedContainer = doc;
         refmap = new Map();
@@ -716,6 +718,13 @@ class Parser {
     // Add a line to the block at the tip.  We assume the tip
     // can accept lines -- that check should be done before calling this.
     inline function addLine():Void {
+        if (partiallyConsumedTab) {
+            offset++; // skip over tab
+            // add space characters:
+            var charsToTab = 4 - (this.column % 4);
+            for (_ in 0...charsToTab)
+                tip.string_content += " ";
+        }
         tip.string_content += currentLine.substring(offset) + '\n';
     }
 
@@ -741,11 +750,13 @@ class Parser {
         while (count > 0 && (c = currentLine.charAt(this.offset)) != null) {
             if (c == "\t") {
                 var charsToTab = 4 - (this.column % 4);
+                partiallyConsumedTab = columns && charsToTab > count;
                 var charsToAdvance = charsToTab > count ? count : charsToTab;
                 this.column += charsToAdvance;
-                this.offset += charsToAdvance < charsToTab ? 0 : 1;
+                this.offset += partiallyConsumedTab ? 0 : 1;
                 count -= (columns ? charsToAdvance : 1);
             } else {
+                partiallyConsumedTab = false;
                 cols += 1;
                 this.offset += 1;
                 this.column += 1; // assume ascii; block starts are ascii
