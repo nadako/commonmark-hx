@@ -5,6 +5,7 @@ import commonmark.Common.OPENTAG;
 import commonmark.Common.CLOSETAG;
 import commonmark.Node.ListData;
 import commonmark.Node.NodeType;
+import commonmark.Node.SourcePos;
 
 typedef ParserOptions = {
     >InlineParser.InlineParserOptions,
@@ -467,7 +468,7 @@ class Parser {
         lastLineLength = 0;
     }
 
-    inline function newDocument() return new Node(Document, [[1, 1], [0, 0]]);
+    inline function newDocument() return new Node(Document, new SourcePos(1, 1, 0, 0));
 
     // The main parsing function.  Returns a parsed document AST.
     public function parse(input:String):Node {
@@ -601,7 +602,7 @@ class Parser {
             // and we don't count blanks in fenced code for purposes of tight/loose
             // lists or breaking out of lists.  We also don't set _lastLineBlank
             // on an empty list item, or if we just closed a fenced block.
-            var lastLineBlank = blank && !(t == BlockQuote || (t == CodeBlock && container.isFenced) || (t == Item && container.firstChild == null && container.sourcepos[0][0] == this.lineNumber));
+            var lastLineBlank = blank && !(t == BlockQuote || (t == CodeBlock && container.isFenced) || (t == Item && container.firstChild == null && container.sourcepos.startline == this.lineNumber));
 
             // propagate lastLineBlank up through parents:
             var cont = container;
@@ -634,7 +635,8 @@ class Parser {
     function finalize(block:Node, lineNumber:Int):Void {
         var above = block.parent;
         block.open = false;
-        block.sourcepos[1] = [lineNumber, lastLineLength];
+        block.sourcepos.endline = lineNumber;
+        block.sourcepos.endcolumn = lastLineLength;
         blocks[block.type].finalize(this, block);
         tip = above;
     }
@@ -740,7 +742,7 @@ class Parser {
             finalize(tip, lineNumber - 1);
 
         var column_number = offset + 1; // offset 0 = column 1
-        var newBlock = new Node(tag, [[lineNumber, column_number], [0, 0]]);
+        var newBlock = new Node(tag, new SourcePos(lineNumber, column_number, 0, 0));
         newBlock.string_content = '';
         tip.appendChild(newBlock);
         tip = newBlock;

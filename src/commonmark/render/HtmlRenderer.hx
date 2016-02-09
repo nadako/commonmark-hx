@@ -259,9 +259,7 @@ class HtmlRenderer extends Renderer {
         if (options.sourcepos) {
             var pos = node.sourcepos;
             if (pos != null)
-                att.push(['data-sourcepos', Std.string(pos[0][0]) + ':' +
-                            Std.string(pos[0][1]) + '-' + Std.string(pos[1][0]) + ':' +
-                            Std.string(pos[1][1])]);
+                att.push(['data-sourcepos', pos.startline + ':' + pos.startcolumn + '-' + pos.endline + ':' + pos.endcolumn]);
         }
         return att;
     }
