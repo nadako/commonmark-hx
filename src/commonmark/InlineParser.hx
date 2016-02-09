@@ -203,7 +203,7 @@ class InlineParser {
         if (lastc != null && lastc.type == Text && lastc.literal.charAt(lastc.literal.length - 1) == ' ') {
             var hardbreak = lastc.literal.charAt(lastc.literal.length - 2) == ' ';
             lastc.literal = reFinalSpace.replace(lastc.literal, "");
-            block.appendChild(new Node(hardbreak ? Hardbreak : Softbreak));
+            block.appendChild(new Node(hardbreak ? Linebreak : Softbreak));
         } else {
             block.appendChild(new Node(Softbreak));
         }
@@ -324,7 +324,7 @@ class InlineParser {
         pos++;
         if (peek() == C_NEWLINE) {
             pos++;
-            block.appendChild(new Node(Hardbreak));
+            block.appendChild(new Node(Linebreak));
         } else if (reEscapable.match(subj.charAt(pos))) {
             block.appendChild(text(subj.charAt(pos)));
             pos++;

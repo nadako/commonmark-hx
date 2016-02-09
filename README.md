@@ -5,7 +5,7 @@
 This is a port the [JavaScript reference implementation](https://github.com/jgm/commonmark.js) of the [CommonMark](http://commonmark.org/) spec.
 
 * Current spec version version: 0.24
-* Corresponding JS implementation commit: https://github.com/jgm/commonmark.js/commit/018bb6cdd029cee0066162648d8f0f3a49b7ad2e
+* Corresponding JS implementation commit: https://github.com/jgm/commonmark.js/commit/eb14f5f854ad5b38e6dba536dd192c3642d5a649
 
 
 ## Example usage

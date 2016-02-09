@@ -11,7 +11,7 @@ package commonmark;
     var HtmlBlock      = 8;
     var Paragraph      = 9;
     var Text           = 10;
-    var Hardbreak      = 11;
+    var Linebreak      = 11;
     var Softbreak      = 12;
     var Code           = 13;
     var Link           = 14;
