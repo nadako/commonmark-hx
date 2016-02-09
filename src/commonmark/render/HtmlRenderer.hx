@@ -4,8 +4,8 @@ import commonmark.Common.escapeXml as esc;
 import commonmark.Node;
 
 typedef HtmlRendererOptions = {
-    var sourcepos:Bool;
-    var safe:Bool;
+    @:optional var sourcepos:Bool;
+    @:optional var safe:Bool;
 
     /**
         by default, soft breaks are rendered as newlines in HTML
@@ -24,10 +24,17 @@ class HtmlRenderer extends Renderer {
     static var reSafeDataProtocol = ~/^data:image\/(?:png|gif|jpeg|webp)/i;
 
     public function new(?options:HtmlRendererOptions) {
-        if (options == null)
-            options = {sourcepos: false, safe: false, softbreak: "\n"};
-        else if (options.softbreak == null)
-            options.softbreak = "\n";
+        if (options == null) {
+            options = {
+                softbreak: "\n",
+                sourcepos: false,
+                safe: false,
+            };
+        } else {
+            if (options.softbreak == null) options.softbreak = "\n";
+            if (options.sourcepos == null) options.sourcepos = false;
+            if (options.safe == null) options.safe = false;
+        }
 
         this.options = options;
         this.disableTags = 0;
