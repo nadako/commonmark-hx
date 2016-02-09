@@ -213,9 +213,13 @@ class Node {
     public inline function walker() return new NodeWalker(this);
 }
 
-typedef NodeWalkerData = {
-    var node:Node;
-    var entering:Bool;
+class NodeWalkerEvent {
+    public var node(default,null):Node;
+    public var entering(default,null):Bool;
+    public inline function new(node, entering) {
+        this.node = node;
+        this.entering = entering;
+    }
 }
 
 class NodeWalker {
@@ -229,7 +233,7 @@ class NodeWalker {
         this.entering = true;
     }
 
-    public function next():NodeWalkerData {
+    public function next():NodeWalkerEvent {
         var cur = this.current;
         var entering = this.entering;
 
@@ -256,7 +260,7 @@ class NodeWalker {
             this.entering = true;
         }
 
-        return {entering: entering, node: cur};
+        return new NodeWalkerEvent(cur, entering);
     }
 
     function resumeAt(node:Node, entering:Bool):Void {
