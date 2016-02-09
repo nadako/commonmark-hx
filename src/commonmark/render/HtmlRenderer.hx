@@ -66,7 +66,8 @@ class HtmlRenderer extends Renderer {
         lastOut = '>';
     }
 
-/* Node methods */
+
+    /* Node methods */
 
     override function text(node:Node, _) {
         out(node.literal);
@@ -248,6 +249,7 @@ class HtmlRenderer extends Renderer {
 
 
     /* Helper methods */
+
     override function out(s:String) {
         lit(esc(s, false));
     }
