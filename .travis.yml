@@ -30,7 +30,7 @@ matrix:
 
     - env: TARGET=java
       install:
-        - haxelib install java
+        - haxelib install hxjava
 
     #- env: TARGET=neko
 
