@@ -33,7 +33,7 @@ matrix:
       install:
         - haxelib install hxjava
 
-    - env: TARGET=neko
+    # - env: TARGET=neko
 
 install:
 
