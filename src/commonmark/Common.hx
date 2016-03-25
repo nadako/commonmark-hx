@@ -4,7 +4,7 @@ import haxe.DynamicAccess;
 
 class Common {
     public static inline var ENTITY = "&(?:#x[a-f0-9]{1,8}|#[0-9]{1,8}|[a-z][a-z0-9]{1,31});";
-    public static inline var ESCAPABLE = '[!"#$%&\'()*+,./:;<=>?@[\\\\\\]^_`{|}~-]';
+    public static inline var ESCAPABLE = '[!"#$%&\'()*+,./:;<=>?@\\[\\\\\\]^_`{|}~-]';
 
     static inline var TAGNAME = '[A-Za-z][A-Za-z0-9-]*';
     static inline var ATTRIBUTENAME = '[a-zA-Z_:][a-zA-Z0-9:._-]*';
