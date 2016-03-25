@@ -9,6 +9,8 @@ class Travis {
                 makeNeko();
             case "cs":
                 makeCS();
+            case "java":
+                makeJava();
             case other:
                 throw "Unknown TARGET: " + other;
         };
@@ -30,5 +32,10 @@ class Travis {
     static function makeCS() {
         Sys.command("haxe", ["build-cs.hxml"]);
         return "mono " + FileSystem.absolutePath("bin/cs/bin/Test.exe");
+    }
+
+    static function makeJava() {
+        Sys.command("haxe", ["build-java.hxml"]);
+        return "java -jar " + FileSystem.absolutePath("bin/java/Test.jar");
     }
 }

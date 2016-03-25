@@ -12,6 +12,9 @@ addons:
 #   - "3.2.0"
 #   - development
 
+before_install:
+  - git clone https://github.com/jgm/CommonMark
+
 matrix:
   include:
     - env: TARGET=js
@@ -19,18 +22,19 @@ matrix:
     - env: TARGET=cs
       install:
         - haxelib install hxcs
-        - git clone https://github.com/jgm/CommonMark
       addons:
         apt:
           packages:
-            - python3
             - mono-devel
             - mono-mcs
+
+    - env: TARGET=java
+      install:
+        - haxelib install java
 
     #- env: TARGET=neko
 
 install:
-  - git clone https://github.com/jgm/CommonMark
 
 script:
   - mkdir bin
