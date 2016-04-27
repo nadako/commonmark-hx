@@ -28,28 +28,18 @@ package commonmark;
     var Bullet  = 2;
 }
 
-abstract SourcePos(haxe.ds.Vector<Int>) {
-    public var startline(get,set):Int;
-    public var startcolumn(get,set):Int;
-    public var endline(get,set):Int;
-    public var endcolumn(get,set):Int;
+class SourcePos {
+    public var startline:Int;
+    public var startcolumn:Int;
+    public var endline:Int;
+    public var endcolumn:Int;
 
     public inline function new(sl,sc,el,ec) {
-        this = new haxe.ds.Vector(4);
-        this[0] = sl;
-        this[1] = sc;
-        this[2] = el;
-        this[3] = ec;
+        startline = sl;
+        startcolumn = sc;
+        endline = el;
+        endcolumn = ec;
     }
-
-    inline function get_startline() return this[0];
-    inline function set_startline(v) return this[0] = v;
-    inline function get_startcolumn() return this[1];
-    inline function set_startcolumn(v) return this[1] = v;
-    inline function get_endline() return this[2];
-    inline function set_endline(v) return this[2] = v;
-    inline function get_endcolumn() return this[3];
-    inline function set_endcolumn(v) return this[3] = v;
 }
 
 @:publicFields
