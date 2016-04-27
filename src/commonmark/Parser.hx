@@ -504,6 +504,8 @@ class Parser {
         oldtip = tip;
         offset = 0;
         column = 0;
+        blank = false;
+        partiallyConsumedTab = false;
         lineNumber += 1;
 
         // replace NUL characters for security
@@ -706,6 +708,7 @@ class Parser {
     inline function advanceNextNonspace():Void {
         offset = nextNonspace;
         column = nextNonspaceColumn;
+        partiallyConsumedTab = false;
     }
 
     // Finalize and close any unmatched blocks.
@@ -756,11 +759,18 @@ class Parser {
         while (count > 0 && (c = currentLine.charAt(this.offset)) != null) {
             if (c == "\t") {
                 var charsToTab = 4 - (this.column % 4);
-                partiallyConsumedTab = columns && charsToTab > count;
-                var charsToAdvance = charsToTab > count ? count : charsToTab;
-                this.column += charsToAdvance;
-                this.offset += partiallyConsumedTab ? 0 : 1;
-                count -= (columns ? charsToAdvance : 1);
+                if (columns) {
+                    partiallyConsumedTab = charsToTab > count;
+                    var charsToAdvance = charsToTab > count ? count : charsToTab;
+                    column += charsToAdvance;
+                    offset += partiallyConsumedTab ? 0 : 1;
+                    count -= (columns ? charsToAdvance : 1);
+                } else {
+                    partiallyConsumedTab = false;
+                    column += charsToTab;
+                    offset += 1;
+                    count -= 1;
+                }
             } else {
                 partiallyConsumedTab = false;
                 cols += 1;
