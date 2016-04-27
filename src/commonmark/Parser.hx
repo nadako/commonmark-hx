@@ -213,6 +213,12 @@ class ParagraphBehaviour implements IBlockBehaviour {
     function acceptsLines() return true;
 }
 
+@:enum abstract BlockStartResult(Int) {
+    var BSNoMatch = 0;
+    var BSContainer = 1;
+    var BSLeaf = 2;
+}
+
 class Parser {
     var doc:Node;
     var inlineParser:InlineParser;
@@ -307,9 +313,9 @@ class Parser {
     // 0 = no match
     // 1 = matched container, keep going
     // 2 = matched leaf, no more block starts
-    static var blockStarts:Array<Parser->Node->Int> = [
+    static var blockStarts:Array<Parser->Node->BlockStartResult> = [
         // block quote
-        function(parser:Parser, container:Node):Int {
+        function(parser, container) {
             if (!parser.indented && peek(parser.currentLine, parser.nextNonspace) == C_GREATERTHAN) {
                 parser.advanceNextNonspace();
                 parser.advanceOffset(1, false);
@@ -318,14 +324,14 @@ class Parser {
                     parser.advanceOffset(1, true);
                 parser.closeUnmatchedBlocks();
                 parser.addChild(BlockQuote, parser.nextNonspace);
-                return 1;
+                return BSContainer;
             } else {
-                return 0;
+                return BSNoMatch;
             }
         },
 
         // ATX heading
-        function(parser:Parser, container:Node):Int {
+        function(parser, container) {
             if (!parser.indented && (reATXHeadingMarker.match(parser.currentLine.substring(parser.nextNonspace)))) {
                 parser.advanceNextNonspace();
                 parser.advanceOffset(reATXHeadingMarker.matched(0).length, false);
@@ -335,14 +341,14 @@ class Parser {
                 // remove trailing ###s:
                 container.string_content = ~/ +#+ *$/.replace(~/^ *#+ *$/.replace(parser.currentLine.substr(parser.offset), ''), '');
                 parser.advanceOffset(parser.currentLine.length - parser.offset);
-                return 2;
+                return BSLeaf;
             } else {
-                return 0;
+                return BSNoMatch;
             }
         },
 
         // Fenced code block
-        function(parser:Parser, container:Node):Int {
+        function(parser, container) {
             if (!parser.indented && reCodeFence.match(parser.currentLine.substr(parser.nextNonspace))) {
                 var fenceLength = reCodeFence.matched(0).length;
                 parser.closeUnmatchedBlocks();
@@ -353,14 +359,14 @@ class Parser {
                 container.fenceOffset = parser.indent;
                 parser.advanceNextNonspace();
                 parser.advanceOffset(fenceLength, false);
-                return 2;
+                return BSLeaf;
             } else {
-                return 0;
+                return BSNoMatch;
             }
         },
 
         // HTML block
-        function(parser:Parser, container:Node):Int {
+        function(parser, container) {
             if (!parser.indented && peek(parser.currentLine, parser.nextNonspace) == C_LESSTHAN) {
                 var s = parser.currentLine.substr(parser.nextNonspace);
                 for (blockType in 1...8) {
@@ -370,15 +376,15 @@ class Parser {
                         // spaces are part of the HTML block:
                         var b = parser.addChild(HtmlBlock, parser.offset);
                         b.htmlBlockType = blockType;
-                        return 2;
+                        return BSLeaf;
                     }
                 }
             }
-            return 0;
+            return BSNoMatch;
         },
 
         // Setext heading
-        function(parser:Parser, container:Node):Int {
+        function(parser, container) {
             if (!parser.indented && container.type == Paragraph && reSetextHeadingLine.match(parser.currentLine.substring(parser.nextNonspace))) {
                 parser.closeUnmatchedBlocks();
                 var heading = new Node(Heading, container.sourcepos);
@@ -388,26 +394,26 @@ class Parser {
                 container.unlink();
                 parser.tip = heading;
                 parser.advanceOffset(parser.currentLine.length - parser.offset, false);
-                return 2;
+                return BSLeaf;
             } else {
-                return 0;
+                return BSNoMatch;
             }
         },
 
         // hrule
-        function(parser:Parser, container:Node):Int {
+        function(parser, container) {
             if (!parser.indented && reThematicBreak.match(parser.currentLine.substr(parser.nextNonspace))) {
                 parser.closeUnmatchedBlocks();
                 parser.addChild(ThematicBreak, parser.nextNonspace);
                 parser.advanceOffset(parser.currentLine.length - parser.offset, false);
-                return 2;
+                return BSLeaf;
             } else {
-                return 0;
+                return BSNoMatch;
             }
         },
 
         // list item
-        function(parser:Parser, container:Node):Int {
+        function(parser, container) {
             var data;
             if ((!parser.indented || container.type == List) && (data = parseListMarker(parser)) != null) {
                 parser.closeUnmatchedBlocks();
@@ -421,22 +427,22 @@ class Parser {
                 // add the list item
                 container = parser.addChild(Item, parser.nextNonspace);
                 container.listData = data;
-                return 1;
+                return BSContainer;
             } else {
-                return 0;
+                return BSNoMatch;
             }
         },
 
         // indented code block
-        function(parser:Parser, container:Node):Int {
+        function(parser, container) {
             if (parser.indented && parser.tip.type != Paragraph && !parser.blank) {
                 // indented code
                 parser.advanceOffset(CODE_INDENT, true);
                 parser.closeUnmatchedBlocks();
                 parser.addChild(CodeBlock, parser.offset);
-                return 2;
+                return BSLeaf;
             } else {
-                return 0;
+                return BSNoMatch;
             }
          }
 
@@ -564,10 +570,10 @@ class Parser {
             var i = 0;
             while (i < startsLen) {
                 var res = starts[i](this, container);
-                if (res == 1) {
+                if (res == BSContainer) {
                     container = tip;
                     break;
-                } else if (res == 2) {
+                } else if (res == BSLeaf) {
                     container = tip;
                     matchedLeaf = true;
                     break;
