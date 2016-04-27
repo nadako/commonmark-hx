@@ -12,7 +12,7 @@ typedef ParserOptions = {
 }
 
 interface IBlockBehaviour {
-    function doContinue(parser:Parser, block:Node):Int;
+    function doContinue(parser:Parser, block:Node):ContinueResult;
     function finalize(parser:Parser, block:Node):Void;
     function canContain(t:NodeType):Bool;
     function acceptsLines():Bool;
@@ -21,7 +21,7 @@ interface IBlockBehaviour {
 @:publicFields
 class DocumentBehaviour implements IBlockBehaviour {
     function new() {}
-    function doContinue(_, _) return 0;
+    function doContinue(_, _) return CMatched;
     function finalize(_, _) {};
     function canContain(t:NodeType) return (t != Item);
     function acceptsLines() return false;
@@ -31,7 +31,7 @@ class DocumentBehaviour implements IBlockBehaviour {
 @:access(commonmark.Parser)
 class ListBehaviour implements IBlockBehaviour {
     function new() {}
-    function doContinue(_, _) return 0;
+    function doContinue(_, _) return CMatched;
     function finalize(parser:Parser, block:Node) {
         var item = block.firstChild;
         while (item != null) {
@@ -69,9 +69,9 @@ class BlockQuoteBehaviour implements IBlockBehaviour {
             if (Parser.isSpaceOrTab(Parser.peek(ln, parser.offset)))
                 parser.advanceOffset(1, true);
         } else {
-            return 1;
+            return CNotMatched;
         }
-        return 0;
+        return CMatched;
     }
     function finalize(_, _) {};
     function canContain(t:NodeType) return (t != Item);
@@ -85,15 +85,15 @@ class ItemBehaviour implements IBlockBehaviour {
     function doContinue(parser:Parser, container:Node) {
         if (parser.blank) {
             if (container.firstChild == null)
-                return 1; // Blank line after empty list item
+                return CNotMatched; // Blank line after empty list item
             else
                 parser.advanceNextNonspace();
         } else if (parser.indent >= container.listData.markerOffset + container.listData.padding) {
             parser.advanceOffset(container.listData.markerOffset + container.listData.padding, true);
         } else {
-            return 1;
+            return CNotMatched;
         }
-        return 0;
+        return CMatched;
     }
     function finalize(_, _) {}
     function canContain(t:NodeType) return (t != Item);
@@ -105,7 +105,7 @@ class HeadingBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(_, _) {
         // a heading can never container > 1 line, so fail to match:
-        return 1;
+        return CNotMatched;
     }
     function finalize(_, _) {};
     function canContain(_) return false;
@@ -117,7 +117,7 @@ class ThematicBreakBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(_, _) {
         // a thematic break can never container > 1 line, so fail to match:
-        return 1;
+        return CNotMatched;
     };
     function finalize(_, _) {};
     function canContain(_) return false;
@@ -136,7 +136,7 @@ class CodeBlockBehaviour implements IBlockBehaviour {
             if (match && Parser.reClosingCodeFence.matched(0).length >= container.fenceLength) {
                 // closing fence - we're at end of line, so we can return
                 parser.finalize(container, parser.lineNumber);
-                return 2;
+                return CDone;
             } else {
                 // skip optional spaces of fence offset
                 var i = container.fenceOffset;
@@ -151,10 +151,10 @@ class CodeBlockBehaviour implements IBlockBehaviour {
             } else if (parser.blank) {
                 parser.advanceNextNonspace();
             } else {
-                return 1;
+                return CNotMatched;
             }
         }
-        return 0;
+        return CMatched;
     }
     function finalize(parser:Parser, block:Node) {
         if (block.isFenced) { // fenced
@@ -179,7 +179,7 @@ class CodeBlockBehaviour implements IBlockBehaviour {
 class HtmlBlockBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(parser:Parser, container:Node) {
-        return ((parser.blank && (container.htmlBlockType == 6 || container.htmlBlockType == 7)) ? 1 : 0);
+        return ((parser.blank && (container.htmlBlockType == 6 || container.htmlBlockType == 7)) ? CNotMatched : CMatched);
     }
     function finalize(parser:Parser, block:Node) {
         block.literal = ~/(\n *)+$/.replace(block.string_content, '');
@@ -194,7 +194,7 @@ class HtmlBlockBehaviour implements IBlockBehaviour {
 class ParagraphBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(parser:Parser, _) {
-        return (parser.blank ? 1 : 0);
+        return (parser.blank ? CNotMatched : CMatched);
     }
     function finalize(parser:Parser, block:Node) {
         var pos;
@@ -217,6 +217,12 @@ class ParagraphBehaviour implements IBlockBehaviour {
     var BSNoMatch = 0;
     var BSContainer = 1;
     var BSLeaf = 2;
+}
+
+@:enum abstract ContinueResult(Int) {
+    var CMatched = 0;
+    var CNotMatched = 1;
+    var CDone = 2;
 }
 
 class Parser {
@@ -529,10 +535,10 @@ class Parser {
             findNextNonspace();
 
             switch (blocks[container.type].doContinue(this, container)) {
-                case 0: // we've matched, keep going
-                case 1: // we've failed to match a block
+                case CMatched: // we've matched, keep going
+                case CNotMatched: // we've failed to match a block
                     all_matched = false;
-                case 2: // we've hit end of line for fenced code close and can return
+                case CDone: // we've hit end of line for fenced code close and can return
                     lastLineLength = ln.length;
                     return;
                 default:
