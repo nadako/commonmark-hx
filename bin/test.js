@@ -1282,7 +1282,7 @@ var commonmark_BlockQuoteBehaviour = function() {
 commonmark_BlockQuoteBehaviour.__name__ = true;
 commonmark_BlockQuoteBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
 commonmark_BlockQuoteBehaviour.tryStart = function(parser,block) {
-	if(!parser.indented && commonmark_Parser.peek(parser.currentLine,parser.nextNonspace) == 62) {
+	if(parser.indent < 4 && commonmark_Parser.peek(parser.currentLine,parser.nextNonspace) == 62) {
 		parser.offset = parser.nextNonspace;
 		parser.column = parser.nextNonspaceColumn;
 		parser.partiallyConsumedTab = false;
@@ -1301,7 +1301,7 @@ commonmark_BlockQuoteBehaviour.tryStart = function(parser,block) {
 commonmark_BlockQuoteBehaviour.prototype = {
 	tryContinue: function(parser,_) {
 		var ln = parser.currentLine;
-		if(!parser.indented && commonmark_Parser.peek(ln,parser.nextNonspace) == 62) {
+		if(parser.indent < 4 && commonmark_Parser.peek(ln,parser.nextNonspace) == 62) {
 			parser.offset = parser.nextNonspace;
 			parser.column = parser.nextNonspaceColumn;
 			parser.partiallyConsumedTab = false;
@@ -1331,7 +1331,7 @@ commonmark_ItemBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
 commonmark_ItemBehaviour.tryStart = function(parser,container) {
 	var data;
 	var tmp;
-	if(!parser.indented || container.type == 2) {
+	if(parser.indent < 4 || container.type == 2) {
 		data = commonmark_ItemBehaviour.parseListMarker(parser);
 		tmp = data != null;
 	} else {
@@ -1436,7 +1436,7 @@ var commonmark_HeadingBehaviour = function() {
 commonmark_HeadingBehaviour.__name__ = true;
 commonmark_HeadingBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
 commonmark_HeadingBehaviour.tryStartATX = function(parser,container) {
-	if(!parser.indented && commonmark_HeadingBehaviour.reATXHeadingMarker.match(parser.currentLine.substring(parser.nextNonspace))) {
+	if(parser.indent < 4 && commonmark_HeadingBehaviour.reATXHeadingMarker.match(parser.currentLine.substring(parser.nextNonspace))) {
 		parser.offset = parser.nextNonspace;
 		parser.column = parser.nextNonspaceColumn;
 		parser.partiallyConsumedTab = false;
@@ -1454,7 +1454,7 @@ commonmark_HeadingBehaviour.tryStartATX = function(parser,container) {
 	}
 };
 commonmark_HeadingBehaviour.tryStartSetext = function(parser,container) {
-	if(!parser.indented && container.type == 9 && commonmark_HeadingBehaviour.reSetextHeadingLine.match(parser.currentLine.substring(parser.nextNonspace))) {
+	if(parser.indent < 4 && container.type == 9 && commonmark_HeadingBehaviour.reSetextHeadingLine.match(parser.currentLine.substring(parser.nextNonspace))) {
 		parser.closeUnmatchedBlocks();
 		var heading = new commonmark_Node(5,container.sourcepos);
 		heading.level = commonmark_HeadingBehaviour.reSetextHeadingLine.matched(0).charAt(0) == "="?1:2;
@@ -1486,7 +1486,7 @@ var commonmark_ThematicBreakBehaviour = function() {
 commonmark_ThematicBreakBehaviour.__name__ = true;
 commonmark_ThematicBreakBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
 commonmark_ThematicBreakBehaviour.tryStart = function(parser,container) {
-	if(!parser.indented && commonmark_ThematicBreakBehaviour.reThematicBreak.match(HxOverrides.substr(parser.currentLine,parser.nextNonspace,null))) {
+	if(parser.indent < 4 && commonmark_ThematicBreakBehaviour.reThematicBreak.match(HxOverrides.substr(parser.currentLine,parser.nextNonspace,null))) {
 		parser.closeUnmatchedBlocks();
 		parser.addChild(6,parser.nextNonspace);
 		parser.advanceOffset(parser.currentLine.length - parser.offset,false);
@@ -1513,7 +1513,7 @@ var commonmark_CodeBlockBehaviour = function() {
 commonmark_CodeBlockBehaviour.__name__ = true;
 commonmark_CodeBlockBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
 commonmark_CodeBlockBehaviour.tryStartFenced = function(parser,container) {
-	if(!parser.indented && commonmark_CodeBlockBehaviour.reCodeFence.match(HxOverrides.substr(parser.currentLine,parser.nextNonspace,null))) {
+	if(parser.indent < 4 && commonmark_CodeBlockBehaviour.reCodeFence.match(HxOverrides.substr(parser.currentLine,parser.nextNonspace,null))) {
 		var fenceLength = commonmark_CodeBlockBehaviour.reCodeFence.matched(0).length;
 		parser.closeUnmatchedBlocks();
 		var container1 = parser.addChild(7,parser.nextNonspace);
@@ -1531,7 +1531,7 @@ commonmark_CodeBlockBehaviour.tryStartFenced = function(parser,container) {
 	}
 };
 commonmark_CodeBlockBehaviour.tryStartIndented = function(parser,container) {
-	if(parser.indented && parser.tip.type != 9 && !parser.blank) {
+	if(parser.indent >= 4 && parser.tip.type != 9 && !parser.blank) {
 		parser.advanceOffset(4,true);
 		parser.closeUnmatchedBlocks();
 		parser.addChild(7,parser.offset);
@@ -1605,7 +1605,7 @@ var commonmark_HtmlBlockBehaviour = function() {
 commonmark_HtmlBlockBehaviour.__name__ = true;
 commonmark_HtmlBlockBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
 commonmark_HtmlBlockBehaviour.tryStart = function(parser,container) {
-	if(!parser.indented && commonmark_Parser.peek(parser.currentLine,parser.nextNonspace) == 60) {
+	if(parser.indent < 4 && commonmark_Parser.peek(parser.currentLine,parser.nextNonspace) == 60) {
 		var s = HxOverrides.substr(parser.currentLine,parser.nextNonspace,null);
 		var _g = 1;
 		while(_g < 8) {
@@ -1714,7 +1714,6 @@ var commonmark_Parser = function(options) {
 	this.nextNonspace = 0;
 	this.nextNonspaceColumn = 0;
 	this.indent = 0;
-	this.indented = false;
 	this.blank = false;
 	this.partiallyConsumedTab = false;
 	this.allClosed = true;
@@ -1820,7 +1819,7 @@ commonmark_Parser.prototype = {
 		var startsLen = starts.length;
 		while(!matchedLeaf) {
 			this.findNextNonspace();
-			if(!this.indented && !commonmark_Parser.reMaybeSpecial.match(ln.substring(this.nextNonspace))) {
+			if(this.indent < 4 && !commonmark_Parser.reMaybeSpecial.match(ln.substring(this.nextNonspace))) {
 				this.offset = this.nextNonspace;
 				this.column = this.nextNonspaceColumn;
 				this.partiallyConsumedTab = false;
@@ -1952,7 +1951,6 @@ commonmark_Parser.prototype = {
 		this.nextNonspace = i;
 		this.nextNonspaceColumn = cols;
 		this.indent = this.nextNonspaceColumn - this.column;
-		this.indented = this.indent >= 4;
 	}
 	,breakOutOfLists: function(block) {
 		var b = block;

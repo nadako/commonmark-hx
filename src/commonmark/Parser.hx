@@ -468,7 +468,7 @@ class Parser {
     var nextNonspace:Int;
     var nextNonspaceColumn:Int;
     var indent:Int;
-    var indented:Bool;
+    var indented(get,never):Bool;
     var blank:Bool;
     var partiallyConsumedTab:Bool;
     var allClosed:Bool;
@@ -546,7 +546,6 @@ class Parser {
         nextNonspace = 0;
         nextNonspaceColumn = 0;
         indent = 0;
-        indented = false;
         blank = false;
         partiallyConsumedTab = false;
         allClosed = true;
@@ -764,8 +763,9 @@ class Parser {
         this.nextNonspace = i;
         this.nextNonspaceColumn = cols;
         this.indent = this.nextNonspaceColumn - this.column;
-        this.indented = this.indent >= CODE_INDENT;
     }
+
+    inline function get_indented() return indent >= CODE_INDENT;
 
     // Break out of all containing lists, resetting the tip of the
     // document to the parent of the highest list, and finalizing
