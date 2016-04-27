@@ -48,7 +48,6 @@ class InlineParser {
 
     // Constants for character codes:
 
-    static inline var C_NEWLINE = 10;
     static inline var C_ASTERISK = 42;
     static inline var C_UNDERSCORE = 95;
     static inline var C_BACKTICK = 96;
@@ -136,7 +135,7 @@ class InlineParser {
             return false;
         var res = false;
         switch(c) {
-            case C_NEWLINE:
+            case "\n".code:
                 res = parseNewline(block);
             case "\\".code:
                 res = parseBackslash(block);
@@ -322,7 +321,7 @@ class InlineParser {
     function parseBackslash(block:Node):Bool {
         var subj = subject;
         pos++;
-        if (peek() == C_NEWLINE) {
+        if (peek() == "\n".code) {
             pos++;
             block.appendChild(new Node(Linebreak));
         } else if (reEscapable.match(subj.charAt(pos))) {

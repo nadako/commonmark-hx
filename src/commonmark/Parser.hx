@@ -236,7 +236,6 @@ class Parser {
 
     static inline var CODE_INDENT = 4;
 
-    static inline var C_NEWLINE = 10;
     static inline var C_GREATERTHAN = 62;
     static inline var C_LESSTHAN = 60;
     static inline var C_SPACE = 32;
@@ -483,7 +482,7 @@ class Parser {
         currentLine = "";
         var lines = reLineEnding.split(input);
         var len = lines.length;
-        if (input.charCodeAt(input.length - 1) == C_NEWLINE)
+        if (input.charCodeAt(input.length - 1) == "\n".code)
             // ignore last blank line created by final newline
             len--;
         for (i in 0...len)
