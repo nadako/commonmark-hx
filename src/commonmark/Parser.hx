@@ -507,7 +507,7 @@ class Parser {
         return reSpace.match(s);
     }
 
-    var blocks = [
+    var blocks:Map<NodeType,IBlockBehaviour> = [
         Document => new DocumentBehaviour(),
         List => new ListBehaviour(),
         BlockQuote => new BlockQuoteBehaviour(),
