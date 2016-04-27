@@ -73,10 +73,6 @@ class Node {
     public var title:String;
     public var info:String;
     public var level:Int;
-    public var listType(get,set):ListType;
-    public var listTight(get,set):Bool;
-    public var listStart(get,set):Null<Int>;
-    public var listDelimiter(get,set):String;
     public var htmlBlockType:Int;
 
     public var listData:ListData;
@@ -100,18 +96,6 @@ class Node {
         isFenced = false;
         fenceLength = 0;
     }
-
-    inline function get_listType() return listData.type;
-    inline function set_listType(t) return listData.type = t;
-
-    inline function get_listTight() return listData.tight;
-    inline function set_listTight(t) return listData.tight = t;
-
-    inline function get_listStart() return listData.start;
-    inline function set_listStart(n) return listData.start = n;
-
-    inline function get_listDelimiter() return listData.delimiter;
-    inline function set_listDelimiter(delim) return listData.delimiter = delim;
 
     function get_isContainer():Bool {
         switch (type) {

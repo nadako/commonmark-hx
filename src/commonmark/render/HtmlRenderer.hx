@@ -125,7 +125,7 @@ class HtmlRenderer extends Renderer {
     override function paragraph(node:Node, entering:Bool) {
         var grandparent = node.parent.parent, attrs = attrs(node);
         if (grandparent != null && grandparent.type == List) {
-              if (grandparent.listTight)
+              if (grandparent.listData.tight)
                   return;
         }
         if (entering) {
@@ -189,9 +189,9 @@ class HtmlRenderer extends Renderer {
     }
 
     override function list(node:Node, entering:Bool) {
-        var tagname = node.listType == Bullet ? 'ul' : 'ol', attrs = attrs(node);
+        var tagname = node.listData.type == Bullet ? 'ul' : 'ol', attrs = attrs(node);
         if (entering) {
-            var start = node.listStart;
+            var start = node.listData.start;
             if (start != null && start != 1) {
                 attrs.push(['start', Std.string(start)]);
             }
