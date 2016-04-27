@@ -1232,7 +1232,7 @@ var commonmark_DocumentBehaviour = function() {
 commonmark_DocumentBehaviour.__name__ = true;
 commonmark_DocumentBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
 commonmark_DocumentBehaviour.prototype = {
-	doContinue: function(_,_1) {
+	tryContinue: function(_,_1) {
 		return 0;
 	}
 	,finalize: function(_,_1) {
@@ -1249,7 +1249,7 @@ var commonmark_ListBehaviour = function() {
 commonmark_ListBehaviour.__name__ = true;
 commonmark_ListBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
 commonmark_ListBehaviour.prototype = {
-	doContinue: function(_,_1) {
+	tryContinue: function(_,_1) {
 		return 0;
 	}
 	,finalize: function(parser,block) {
@@ -1282,7 +1282,7 @@ var commonmark_BlockQuoteBehaviour = function() {
 commonmark_BlockQuoteBehaviour.__name__ = true;
 commonmark_BlockQuoteBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
 commonmark_BlockQuoteBehaviour.prototype = {
-	doContinue: function(parser,_) {
+	tryContinue: function(parser,_) {
 		var ln = parser.currentLine;
 		if(!parser.indented && commonmark_Parser.peek(ln,parser.nextNonspace) == 62) {
 			parser.offset = parser.nextNonspace;
@@ -1312,7 +1312,7 @@ var commonmark_ItemBehaviour = function() {
 commonmark_ItemBehaviour.__name__ = true;
 commonmark_ItemBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
 commonmark_ItemBehaviour.prototype = {
-	doContinue: function(parser,container) {
+	tryContinue: function(parser,container) {
 		if(parser.blank) {
 			if(container.firstChild == null) {
 				return 1;
@@ -1342,7 +1342,7 @@ var commonmark_HeadingBehaviour = function() {
 commonmark_HeadingBehaviour.__name__ = true;
 commonmark_HeadingBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
 commonmark_HeadingBehaviour.prototype = {
-	doContinue: function(_,_1) {
+	tryContinue: function(_,_1) {
 		return 1;
 	}
 	,finalize: function(_,_1) {
@@ -1359,7 +1359,7 @@ var commonmark_ThematicBreakBehaviour = function() {
 commonmark_ThematicBreakBehaviour.__name__ = true;
 commonmark_ThematicBreakBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
 commonmark_ThematicBreakBehaviour.prototype = {
-	doContinue: function(_,_1) {
+	tryContinue: function(_,_1) {
 		return 1;
 	}
 	,finalize: function(_,_1) {
@@ -1376,7 +1376,7 @@ var commonmark_CodeBlockBehaviour = function() {
 commonmark_CodeBlockBehaviour.__name__ = true;
 commonmark_CodeBlockBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
 commonmark_CodeBlockBehaviour.prototype = {
-	doContinue: function(parser,container) {
+	tryContinue: function(parser,container) {
 		var ln = parser.currentLine;
 		var indent = parser.indent;
 		if(container.isFenced) {
@@ -1440,7 +1440,7 @@ var commonmark_HtmlBlockBehaviour = function() {
 commonmark_HtmlBlockBehaviour.__name__ = true;
 commonmark_HtmlBlockBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
 commonmark_HtmlBlockBehaviour.prototype = {
-	doContinue: function(parser,container) {
+	tryContinue: function(parser,container) {
 		if(parser.blank && (container.htmlBlockType == 6 || container.htmlBlockType == 7)) {
 			return 1;
 		} else {
@@ -1463,7 +1463,7 @@ var commonmark_ParagraphBehaviour = function() {
 commonmark_ParagraphBehaviour.__name__ = true;
 commonmark_ParagraphBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
 commonmark_ParagraphBehaviour.prototype = {
-	doContinue: function(parser,_) {
+	tryContinue: function(parser,_) {
 		if(parser.blank) {
 			return 1;
 		} else {
@@ -1662,7 +1662,7 @@ commonmark_Parser.prototype = {
 			}
 			container = lastChild;
 			this.findNextNonspace();
-			switch(this.blocks.h[lastChild.type].doContinue(this,lastChild)) {
+			switch(this.blocks.h[lastChild.type].tryContinue(this,lastChild)) {
 			case 0:
 				break;
 			case 1:

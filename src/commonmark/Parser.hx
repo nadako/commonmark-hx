@@ -12,7 +12,7 @@ typedef ParserOptions = {
 }
 
 interface IBlockBehaviour {
-    function doContinue(parser:Parser, block:Node):ContinueResult;
+    function tryContinue(parser:Parser, block:Node):ContinueResult;
     function finalize(parser:Parser, block:Node):Void;
     function canContain(t:NodeType):Bool;
     function acceptsLines():Bool;
@@ -21,7 +21,7 @@ interface IBlockBehaviour {
 @:publicFields
 class DocumentBehaviour implements IBlockBehaviour {
     function new() {}
-    function doContinue(_, _) return CMatched;
+    function tryContinue(_, _) return CMatched;
     function finalize(_, _) {};
     function canContain(t:NodeType) return (t != Item);
     function acceptsLines() return false;
@@ -31,7 +31,7 @@ class DocumentBehaviour implements IBlockBehaviour {
 @:access(commonmark.Parser)
 class ListBehaviour implements IBlockBehaviour {
     function new() {}
-    function doContinue(_, _) return CMatched;
+    function tryContinue(_, _) return CMatched;
     function finalize(parser:Parser, block:Node) {
         var item = block.firstChild;
         while (item != null) {
@@ -61,7 +61,7 @@ class ListBehaviour implements IBlockBehaviour {
 @:access(commonmark.Parser)
 class BlockQuoteBehaviour implements IBlockBehaviour {
     function new() {}
-    function doContinue(parser:Parser, _) {
+    function tryContinue(parser:Parser, _) {
         var ln = parser.currentLine;
         if (!parser.indented && Parser.peek(ln, parser.nextNonspace) == ">".code) {
             parser.advanceNextNonspace();
@@ -82,7 +82,7 @@ class BlockQuoteBehaviour implements IBlockBehaviour {
 @:access(commonmark.Parser)
 class ItemBehaviour implements IBlockBehaviour {
     function new() {}
-    function doContinue(parser:Parser, container:Node) {
+    function tryContinue(parser:Parser, container:Node) {
         if (parser.blank) {
             if (container.firstChild == null)
                 return CNotMatched; // Blank line after empty list item
@@ -103,7 +103,7 @@ class ItemBehaviour implements IBlockBehaviour {
 @:publicFields
 class HeadingBehaviour implements IBlockBehaviour {
     function new() {}
-    function doContinue(_, _) {
+    function tryContinue(_, _) {
         // a heading can never container > 1 line, so fail to match:
         return CNotMatched;
     }
@@ -115,7 +115,7 @@ class HeadingBehaviour implements IBlockBehaviour {
 @:publicFields
 class ThematicBreakBehaviour implements IBlockBehaviour {
     function new() {}
-    function doContinue(_, _) {
+    function tryContinue(_, _) {
         // a thematic break can never container > 1 line, so fail to match:
         return CNotMatched;
     };
@@ -128,7 +128,7 @@ class ThematicBreakBehaviour implements IBlockBehaviour {
 @:access(commonmark.Parser)
 class CodeBlockBehaviour implements IBlockBehaviour {
     function new() {}
-    function doContinue(parser:Parser, container:Node) {
+    function tryContinue(parser:Parser, container:Node) {
         var ln = parser.currentLine;
         var indent = parser.indent;
         if (container.isFenced) { // fenced
@@ -178,7 +178,7 @@ class CodeBlockBehaviour implements IBlockBehaviour {
 @:access(commonmark.Parser)
 class HtmlBlockBehaviour implements IBlockBehaviour {
     function new() {}
-    function doContinue(parser:Parser, container:Node) {
+    function tryContinue(parser:Parser, container:Node) {
         return ((parser.blank && (container.htmlBlockType == 6 || container.htmlBlockType == 7)) ? CNotMatched : CMatched);
     }
     function finalize(parser:Parser, block:Node) {
@@ -193,7 +193,7 @@ class HtmlBlockBehaviour implements IBlockBehaviour {
 @:access(commonmark.Parser)
 class ParagraphBehaviour implements IBlockBehaviour {
     function new() {}
-    function doContinue(parser:Parser, _) {
+    function tryContinue(parser:Parser, _) {
         return (parser.blank ? CNotMatched : CMatched);
     }
     function finalize(parser:Parser, block:Node) {
@@ -294,7 +294,7 @@ class Parser {
     }
 
     // 'finalize' is run when the block is closed.
-    // 'doContinue' is run to check whether the block is continuing
+    // 'tryContinue' is run to check whether the block is continuing
     // at a certain line and offset (e.g. whether a block quote
     // contains a `>`.  It returns 0 for matched, 1 for not matched,
     // and 2 for "we've dealt with this line completely, go to next."
@@ -529,7 +529,7 @@ class Parser {
 
             findNextNonspace();
 
-            switch (blocks[container.type].doContinue(this, container)) {
+            switch (blocks[container.type].tryContinue(this, container)) {
                 case CMatched: // we've matched, keep going
                 case CNotMatched: // we've failed to match a block
                     all_matched = false;
