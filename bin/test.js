@@ -1667,7 +1667,7 @@ commonmark_ParagraphBehaviour.prototype = {
 			block.string_content = HxOverrides.substr(block.string_content,pos,null);
 			hasReferenceDefs = true;
 		}
-		if(hasReferenceDefs && commonmark_Parser.reSpace.match(block.string_content)) {
+		if(hasReferenceDefs && !commonmark_Parser.reNonSpace.match(block.string_content)) {
 			block.unlink();
 		}
 	}
@@ -2620,7 +2620,7 @@ commonmark_HtmlBlockBehaviour.reHtmlBlockOpen = [new EReg(".",""),new EReg("^<(?
 commonmark_Parser.reLineEnding = new EReg("\r\n|\n|\r","g");
 commonmark_Parser.reMaybeSpecial = new EReg("^[#`~*+_=<>0-9-]","");
 commonmark_Parser.reHtmlBlockClose = [new EReg(".",""),new EReg("</(?:script|pre|style)>","i"),new EReg("-->",""),new EReg("\\?>",""),new EReg(">",""),new EReg("\\]\\]>","")];
-commonmark_Parser.reSpace = new EReg("[ \t\r\n]","");
+commonmark_Parser.reNonSpace = new EReg("[^ \t\r\n]","");
 commonmark_Parser.blockStarts = [commonmark_BlockQuoteBehaviour.tryStart,commonmark_HeadingBehaviour.tryStartATX,commonmark_CodeBlockBehaviour.tryStartFenced,commonmark_HtmlBlockBehaviour.tryStart,commonmark_HeadingBehaviour.tryStartSetext,commonmark_ThematicBreakBehaviour.tryStart,commonmark_ItemBehaviour.tryStart,commonmark_CodeBlockBehaviour.tryStartIndented];
 commonmark_render_HtmlRenderer.reUnsafeProtocol = new EReg("^javascript:|vbscript:|file:|data:","i");
 commonmark_render_HtmlRenderer.reSafeDataProtocol = new EReg("^data:image/(?:png|gif|jpeg|webp)","i");
