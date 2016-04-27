@@ -489,7 +489,6 @@ class Parser {
         ~/>/,
         ~/\]\]>/
     ];
-    static var reNonSpace = ~/[^ \t\r\n]/;
 
     static inline function isSpaceOrTab(c:Int):Bool {
         return c == " ".code || c == "\t".code;
@@ -503,8 +502,9 @@ class Parser {
     }
 
     // Returns true if string contains only space characters.
+    static var reSpace = ~/[ \t\r\n]/;
     static inline function isBlank(s:String):Bool {
-        return !(reNonSpace.match(s));
+        return reSpace.match(s);
     }
 
     var blocks = [
