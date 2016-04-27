@@ -743,11 +743,9 @@ class Parser {
     }
 
     function findNextNonspace():Void {
-        var currentLine = this.currentLine;
-        var i = this.offset;
-        var cols = this.column;
+        var i = offset;
+        var cols = column;
         var c;
-
         while ((c = currentLine.charAt(i)) != '') {
             if (c == ' ') {
                 i++;
@@ -759,10 +757,10 @@ class Parser {
                 break;
             }
         }
-        this.blank = (c == '\n' || c == '\r' || c == '');
-        this.nextNonspace = i;
-        this.nextNonspaceColumn = cols;
-        this.indent = this.nextNonspaceColumn - this.column;
+        blank = (c == '\n' || c == '\r' || c == '');
+        nextNonspace = i;
+        nextNonspaceColumn = cols;
+        indent = nextNonspaceColumn - column;
     }
 
     inline function get_indented() return indent >= CODE_INDENT;

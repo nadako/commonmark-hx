@@ -1928,12 +1928,11 @@ commonmark_Parser.prototype = {
 		}
 	}
 	,findNextNonspace: function() {
-		var currentLine = this.currentLine;
 		var i = this.offset;
 		var cols = this.column;
 		var c;
 		while(true) {
-			c = currentLine.charAt(i);
+			c = this.currentLine.charAt(i);
 			if(!(c != "")) {
 				break;
 			}
