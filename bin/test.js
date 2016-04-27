@@ -1281,6 +1281,23 @@ var commonmark_BlockQuoteBehaviour = function() {
 };
 commonmark_BlockQuoteBehaviour.__name__ = true;
 commonmark_BlockQuoteBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
+commonmark_BlockQuoteBehaviour.tryStart = function(parser,block) {
+	if(!parser.indented && commonmark_Parser.peek(parser.currentLine,parser.nextNonspace) == 62) {
+		parser.offset = parser.nextNonspace;
+		parser.column = parser.nextNonspaceColumn;
+		parser.partiallyConsumedTab = false;
+		parser.advanceOffset(1,false);
+		var c = commonmark_Parser.peek(parser.currentLine,parser.offset);
+		if(c == 32 || c == 9) {
+			parser.advanceOffset(1,true);
+		}
+		parser.closeUnmatchedBlocks();
+		parser.addChild(4,parser.nextNonspace);
+		return 1;
+	} else {
+		return 0;
+	}
+};
 commonmark_BlockQuoteBehaviour.prototype = {
 	tryContinue: function(parser,_) {
 		var ln = parser.currentLine;
@@ -1311,6 +1328,83 @@ var commonmark_ItemBehaviour = function() {
 };
 commonmark_ItemBehaviour.__name__ = true;
 commonmark_ItemBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
+commonmark_ItemBehaviour.tryStart = function(parser,container) {
+	var data;
+	var tmp;
+	if(!parser.indented || container.type == 2) {
+		data = commonmark_ItemBehaviour.parseListMarker(parser);
+		tmp = data != null;
+	} else {
+		tmp = false;
+	}
+	if(tmp) {
+		parser.closeUnmatchedBlocks();
+		var tmp1;
+		if(parser.tip.type == 2) {
+			var list_data = container.listData;
+			tmp1 = !(list_data.type == data.type && list_data.delimiter == data.delimiter && list_data.bulletChar == data.bulletChar);
+		} else {
+			tmp1 = true;
+		}
+		if(tmp1) {
+			container = parser.addChild(2,parser.nextNonspace);
+			container.listData = data;
+		}
+		container = parser.addChild(3,parser.nextNonspace);
+		container.listData = data;
+		return 1;
+	} else {
+		return 0;
+	}
+};
+commonmark_ItemBehaviour.parseListMarker = function(parser) {
+	var rest = HxOverrides.substr(parser.currentLine,parser.nextNonspace,null);
+	var data;
+	var match;
+	if(commonmark_ItemBehaviour.reBulletListMarker.match(rest)) {
+		data = new commonmark_ListData(2,parser.indent);
+		data.bulletChar = commonmark_ItemBehaviour.reBulletListMarker.matched(0).charAt(0);
+		match = commonmark_ItemBehaviour.reBulletListMarker.matched(0);
+	} else if(commonmark_ItemBehaviour.reOrderedListMarker.match(rest)) {
+		data = new commonmark_ListData(1,parser.indent);
+		data.start = Std.parseInt(commonmark_ItemBehaviour.reOrderedListMarker.matched(1));
+		data.delimiter = commonmark_ItemBehaviour.reOrderedListMarker.matched(2);
+		match = commonmark_ItemBehaviour.reOrderedListMarker.matched(0);
+	} else {
+		return null;
+	}
+	var nextc = commonmark_Parser.peek(parser.currentLine,parser.nextNonspace + match.length);
+	if(!(nextc == -1 || nextc == 9 || nextc == 32)) {
+		return null;
+	}
+	parser.offset = parser.nextNonspace;
+	parser.column = parser.nextNonspaceColumn;
+	parser.partiallyConsumedTab = false;
+	parser.advanceOffset(match.length,true);
+	var spacesStartCol = parser.column;
+	var spacesStartOffset = parser.offset;
+	while(true) {
+		parser.advanceOffset(1,true);
+		nextc = commonmark_Parser.peek(parser.currentLine,parser.offset);
+		if(!(parser.column - spacesStartCol < 5 && (nextc == 32 || nextc == 9))) {
+			break;
+		}
+	}
+	var blank_item = commonmark_Parser.peek(parser.currentLine,parser.offset) == -1;
+	var spaces_after_marker = parser.column - spacesStartCol;
+	if(spaces_after_marker >= 5 || spaces_after_marker < 1 || blank_item) {
+		data.padding = match.length + 1;
+		parser.column = spacesStartCol;
+		parser.offset = spacesStartOffset;
+		var c = commonmark_Parser.peek(parser.currentLine,parser.offset);
+		if(c == 32 || c == 9) {
+			parser.advanceOffset(1,true);
+		}
+	} else {
+		data.padding = match.length + spaces_after_marker;
+	}
+	return data;
+};
 commonmark_ItemBehaviour.prototype = {
 	tryContinue: function(parser,container) {
 		if(parser.blank) {
@@ -1341,6 +1435,39 @@ var commonmark_HeadingBehaviour = function() {
 };
 commonmark_HeadingBehaviour.__name__ = true;
 commonmark_HeadingBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
+commonmark_HeadingBehaviour.tryStartATX = function(parser,container) {
+	if(!parser.indented && commonmark_HeadingBehaviour.reATXHeadingMarker.match(parser.currentLine.substring(parser.nextNonspace))) {
+		parser.offset = parser.nextNonspace;
+		parser.column = parser.nextNonspaceColumn;
+		parser.partiallyConsumedTab = false;
+		parser.advanceOffset(commonmark_HeadingBehaviour.reATXHeadingMarker.matched(0).length,false);
+		parser.closeUnmatchedBlocks();
+		var container1 = parser.addChild(5,parser.nextNonspace);
+		container1.level = StringTools.trim(commonmark_HeadingBehaviour.reATXHeadingMarker.matched(0)).length;
+		var _this_r = new RegExp(" +#+ *$","".split("u").join(""));
+		var _this_r1 = new RegExp("^ *#+ *$","".split("u").join(""));
+		container1.string_content = HxOverrides.substr(parser.currentLine,parser.offset,null).replace(_this_r1,"").replace(_this_r,"");
+		parser.advanceOffset(parser.currentLine.length - parser.offset);
+		return 2;
+	} else {
+		return 0;
+	}
+};
+commonmark_HeadingBehaviour.tryStartSetext = function(parser,container) {
+	if(!parser.indented && container.type == 9 && commonmark_HeadingBehaviour.reSetextHeadingLine.match(parser.currentLine.substring(parser.nextNonspace))) {
+		parser.closeUnmatchedBlocks();
+		var heading = new commonmark_Node(5,container.sourcepos);
+		heading.level = commonmark_HeadingBehaviour.reSetextHeadingLine.matched(0).charAt(0) == "="?1:2;
+		heading.string_content = container.string_content;
+		container.insertAfter(heading);
+		container.unlink();
+		parser.tip = heading;
+		parser.advanceOffset(parser.currentLine.length - parser.offset,false);
+		return 2;
+	} else {
+		return 0;
+	}
+};
 commonmark_HeadingBehaviour.prototype = {
 	tryContinue: function(_,_1) {
 		return 1;
@@ -1358,6 +1485,16 @@ var commonmark_ThematicBreakBehaviour = function() {
 };
 commonmark_ThematicBreakBehaviour.__name__ = true;
 commonmark_ThematicBreakBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
+commonmark_ThematicBreakBehaviour.tryStart = function(parser,container) {
+	if(!parser.indented && commonmark_ThematicBreakBehaviour.reThematicBreak.match(HxOverrides.substr(parser.currentLine,parser.nextNonspace,null))) {
+		parser.closeUnmatchedBlocks();
+		parser.addChild(6,parser.nextNonspace);
+		parser.advanceOffset(parser.currentLine.length - parser.offset,false);
+		return 2;
+	} else {
+		return 0;
+	}
+};
 commonmark_ThematicBreakBehaviour.prototype = {
 	tryContinue: function(_,_1) {
 		return 1;
@@ -1375,12 +1512,40 @@ var commonmark_CodeBlockBehaviour = function() {
 };
 commonmark_CodeBlockBehaviour.__name__ = true;
 commonmark_CodeBlockBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
+commonmark_CodeBlockBehaviour.tryStartFenced = function(parser,container) {
+	if(!parser.indented && commonmark_CodeBlockBehaviour.reCodeFence.match(HxOverrides.substr(parser.currentLine,parser.nextNonspace,null))) {
+		var fenceLength = commonmark_CodeBlockBehaviour.reCodeFence.matched(0).length;
+		parser.closeUnmatchedBlocks();
+		var container1 = parser.addChild(7,parser.nextNonspace);
+		container1.isFenced = true;
+		container1.fenceLength = fenceLength;
+		container1.fenceChar = commonmark_CodeBlockBehaviour.reCodeFence.matched(0).charAt(0);
+		container1.fenceOffset = parser.indent;
+		parser.offset = parser.nextNonspace;
+		parser.column = parser.nextNonspaceColumn;
+		parser.partiallyConsumedTab = false;
+		parser.advanceOffset(fenceLength,false);
+		return 2;
+	} else {
+		return 0;
+	}
+};
+commonmark_CodeBlockBehaviour.tryStartIndented = function(parser,container) {
+	if(parser.indented && parser.tip.type != 9 && !parser.blank) {
+		parser.advanceOffset(4,true);
+		parser.closeUnmatchedBlocks();
+		parser.addChild(7,parser.offset);
+		return 2;
+	} else {
+		return 0;
+	}
+};
 commonmark_CodeBlockBehaviour.prototype = {
 	tryContinue: function(parser,container) {
 		var ln = parser.currentLine;
 		var indent = parser.indent;
 		if(container.isFenced) {
-			if(indent <= 3 && ln.charAt(parser.nextNonspace) == container.fenceChar && commonmark_Parser.reClosingCodeFence.match(HxOverrides.substr(ln,parser.nextNonspace,null)) && commonmark_Parser.reClosingCodeFence.matched(0).length >= container.fenceLength) {
+			if(indent <= 3 && ln.charAt(parser.nextNonspace) == container.fenceChar && commonmark_CodeBlockBehaviour.reClosingCodeFence.match(HxOverrides.substr(ln,parser.nextNonspace,null)) && commonmark_CodeBlockBehaviour.reClosingCodeFence.matched(0).length >= container.fenceLength) {
 				parser.finalize(container,parser.lineNumber);
 				return 2;
 			} else {
@@ -1439,6 +1604,21 @@ var commonmark_HtmlBlockBehaviour = function() {
 };
 commonmark_HtmlBlockBehaviour.__name__ = true;
 commonmark_HtmlBlockBehaviour.__interfaces__ = [commonmark_IBlockBehaviour];
+commonmark_HtmlBlockBehaviour.tryStart = function(parser,container) {
+	if(!parser.indented && commonmark_Parser.peek(parser.currentLine,parser.nextNonspace) == 60) {
+		var s = HxOverrides.substr(parser.currentLine,parser.nextNonspace,null);
+		var _g = 1;
+		while(_g < 8) {
+			var blockType = _g++;
+			if(commonmark_HtmlBlockBehaviour.reHtmlBlockOpen[blockType].match(s) && (blockType < 7 || container.type != 9)) {
+				parser.closeUnmatchedBlocks();
+				parser.addChild(8,parser.offset).htmlBlockType = blockType;
+				return 2;
+			}
+		}
+	}
+	return 0;
+};
 commonmark_HtmlBlockBehaviour.prototype = {
 	tryContinue: function(parser,container) {
 		if(parser.blank && (container.htmlBlockType == 6 || container.htmlBlockType == 7)) {
@@ -1549,54 +1729,6 @@ commonmark_Parser.peek = function(ln,pos) {
 	} else {
 		return -1;
 	}
-};
-commonmark_Parser.parseListMarker = function(parser) {
-	var rest = HxOverrides.substr(parser.currentLine,parser.nextNonspace,null);
-	var data;
-	var match;
-	if(commonmark_Parser.reBulletListMarker.match(rest)) {
-		data = new commonmark_ListData(2,parser.indent);
-		data.bulletChar = commonmark_Parser.reBulletListMarker.matched(0).charAt(0);
-		match = commonmark_Parser.reBulletListMarker.matched(0);
-	} else if(commonmark_Parser.reOrderedListMarker.match(rest)) {
-		data = new commonmark_ListData(1,parser.indent);
-		data.start = Std.parseInt(commonmark_Parser.reOrderedListMarker.matched(1));
-		data.delimiter = commonmark_Parser.reOrderedListMarker.matched(2);
-		match = commonmark_Parser.reOrderedListMarker.matched(0);
-	} else {
-		return null;
-	}
-	var nextc = commonmark_Parser.peek(parser.currentLine,parser.nextNonspace + match.length);
-	if(!(nextc == -1 || nextc == 9 || nextc == 32)) {
-		return null;
-	}
-	parser.offset = parser.nextNonspace;
-	parser.column = parser.nextNonspaceColumn;
-	parser.partiallyConsumedTab = false;
-	parser.advanceOffset(match.length,true);
-	var spacesStartCol = parser.column;
-	var spacesStartOffset = parser.offset;
-	while(true) {
-		parser.advanceOffset(1,true);
-		nextc = commonmark_Parser.peek(parser.currentLine,parser.offset);
-		if(!(parser.column - spacesStartCol < 5 && (nextc == 32 || nextc == 9))) {
-			break;
-		}
-	}
-	var blank_item = commonmark_Parser.peek(parser.currentLine,parser.offset) == -1;
-	var spaces_after_marker = parser.column - spacesStartCol;
-	if(spaces_after_marker >= 5 || spaces_after_marker < 1 || blank_item) {
-		data.padding = match.length + 1;
-		parser.column = spacesStartCol;
-		parser.offset = spacesStartOffset;
-		var c = commonmark_Parser.peek(parser.currentLine,parser.offset);
-		if(c == 32 || c == 9) {
-			parser.advanceOffset(1,true);
-		}
-	} else {
-		data.padding = match.length + spaces_after_marker;
-	}
-	return data;
 };
 commonmark_Parser.endsWithBlankLine = function(block) {
 	while(block != null) {
@@ -2479,143 +2611,19 @@ commonmark_InlineParser.IN_PARENS_NOSP = "\\((" + "[^\\\\()\\x00-\\x20]" + "|" +
 commonmark_InlineParser.reLinkDestination = new EReg("^(?:" + "[^\\\\()\\x00-\\x20]" + "+|" + commonmark_InlineParser.ESCAPED_CHAR + "|\\\\|" + commonmark_InlineParser.IN_PARENS_NOSP + ")*","");
 commonmark_InlineParser.reLinkLabel = new EReg("^\\[(?:[^\\\\\\[\\]]|" + commonmark_InlineParser.ESCAPED_CHAR + "|\\\\){0,1000}\\]","");
 commonmark_InlineParser.reSpaceAtEndOfLine = new EReg("^ *(?:\n|$)","");
+commonmark_ItemBehaviour.reBulletListMarker = new EReg("^[*+-]","");
+commonmark_ItemBehaviour.reOrderedListMarker = new EReg("^(\\d{1,9})([.)])","");
+commonmark_HeadingBehaviour.reATXHeadingMarker = new EReg("^#{1,6}(?: +|$)","");
+commonmark_HeadingBehaviour.reSetextHeadingLine = new EReg("^(?:=+|-+) *$","");
+commonmark_ThematicBreakBehaviour.reThematicBreak = new EReg("^(?:(?:\\* *){3,}|(?:_ *){3,}|(?:- *){3,}) *$","");
+commonmark_CodeBlockBehaviour.reCodeFence = new EReg("^`{3,}(?!.*`)|^~{3,}(?!.*~)","");
+commonmark_CodeBlockBehaviour.reClosingCodeFence = new EReg("^(?:`{3,}|~{3,})(?= *$)","");
+commonmark_HtmlBlockBehaviour.reHtmlBlockOpen = [new EReg(".",""),new EReg("^<(?:script|pre|style)(?:\\s|>|$)","i"),new EReg("^<!--",""),new EReg("^<[?]",""),new EReg("^<![A-Z]",""),new EReg("^<!\\[CDATA\\[",""),new EReg("^<[/]?(?:address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|section|source|title|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)(?:\\s|[/]?[>]|$)","i"),new EReg("^(?:" + commonmark_Common.OPENTAG + "|" + commonmark_Common.CLOSETAG + ")\\s*$","i")];
 commonmark_Parser.reLineEnding = new EReg("\r\n|\n|\r","g");
 commonmark_Parser.reMaybeSpecial = new EReg("^[#`~*+_=<>0-9-]","");
-commonmark_Parser.reHtmlBlockOpen = [new EReg(".",""),new EReg("^<(?:script|pre|style)(?:\\s|>|$)","i"),new EReg("^<!--",""),new EReg("^<[?]",""),new EReg("^<![A-Z]",""),new EReg("^<!\\[CDATA\\[",""),new EReg("^<[/]?(?:address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|section|source|title|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)(?:\\s|[/]?[>]|$)","i"),new EReg("^(?:" + commonmark_Common.OPENTAG + "|" + commonmark_Common.CLOSETAG + ")\\s*$","i")];
 commonmark_Parser.reHtmlBlockClose = [new EReg(".",""),new EReg("</(?:script|pre|style)>","i"),new EReg("-->",""),new EReg("\\?>",""),new EReg(">",""),new EReg("\\]\\]>","")];
-commonmark_Parser.reATXHeadingMarker = new EReg("^#{1,6}(?: +|$)","");
-commonmark_Parser.reCodeFence = new EReg("^`{3,}(?!.*`)|^~{3,}(?!.*~)","");
-commonmark_Parser.reClosingCodeFence = new EReg("^(?:`{3,}|~{3,})(?= *$)","");
-commonmark_Parser.reSetextHeadingLine = new EReg("^(?:=+|-+) *$","");
-commonmark_Parser.reThematicBreak = new EReg("^(?:(?:\\* *){3,}|(?:_ *){3,}|(?:- *){3,}) *$","");
-commonmark_Parser.reBulletListMarker = new EReg("^[*+-]","");
-commonmark_Parser.reOrderedListMarker = new EReg("^(\\d{1,9})([.)])","");
 commonmark_Parser.reNonSpace = new EReg("[^ \t\r\n]","");
-commonmark_Parser.blockStarts = [function(parser,container) {
-	if(!parser.indented && commonmark_Parser.peek(parser.currentLine,parser.nextNonspace) == 62) {
-		parser.offset = parser.nextNonspace;
-		parser.column = parser.nextNonspaceColumn;
-		parser.partiallyConsumedTab = false;
-		parser.advanceOffset(1,false);
-		var c = commonmark_Parser.peek(parser.currentLine,parser.offset);
-		if(c == 32 || c == 9) {
-			parser.advanceOffset(1,true);
-		}
-		parser.closeUnmatchedBlocks();
-		parser.addChild(4,parser.nextNonspace);
-		return 1;
-	} else {
-		return 0;
-	}
-},function(parser1,container1) {
-	if(!parser1.indented && commonmark_Parser.reATXHeadingMarker.match(parser1.currentLine.substring(parser1.nextNonspace))) {
-		parser1.offset = parser1.nextNonspace;
-		parser1.column = parser1.nextNonspaceColumn;
-		parser1.partiallyConsumedTab = false;
-		parser1.advanceOffset(commonmark_Parser.reATXHeadingMarker.matched(0).length,false);
-		parser1.closeUnmatchedBlocks();
-		var container2 = parser1.addChild(5,parser1.nextNonspace);
-		container2.level = StringTools.trim(commonmark_Parser.reATXHeadingMarker.matched(0)).length;
-		var _this_r = new RegExp(" +#+ *$","".split("u").join(""));
-		var _this_r1 = new RegExp("^ *#+ *$","".split("u").join(""));
-		container2.string_content = HxOverrides.substr(parser1.currentLine,parser1.offset,null).replace(_this_r1,"").replace(_this_r,"");
-		parser1.advanceOffset(parser1.currentLine.length - parser1.offset);
-		return 2;
-	} else {
-		return 0;
-	}
-},function(parser2,container3) {
-	if(!parser2.indented && commonmark_Parser.reCodeFence.match(HxOverrides.substr(parser2.currentLine,parser2.nextNonspace,null))) {
-		var fenceLength = commonmark_Parser.reCodeFence.matched(0).length;
-		parser2.closeUnmatchedBlocks();
-		var container4 = parser2.addChild(7,parser2.nextNonspace);
-		container4.isFenced = true;
-		container4.fenceLength = fenceLength;
-		container4.fenceChar = commonmark_Parser.reCodeFence.matched(0).charAt(0);
-		container4.fenceOffset = parser2.indent;
-		parser2.offset = parser2.nextNonspace;
-		parser2.column = parser2.nextNonspaceColumn;
-		parser2.partiallyConsumedTab = false;
-		parser2.advanceOffset(fenceLength,false);
-		return 2;
-	} else {
-		return 0;
-	}
-},function(parser3,container5) {
-	if(!parser3.indented && commonmark_Parser.peek(parser3.currentLine,parser3.nextNonspace) == 60) {
-		var s = HxOverrides.substr(parser3.currentLine,parser3.nextNonspace,null);
-		var _g = 1;
-		while(_g < 8) {
-			var blockType = _g++;
-			if(commonmark_Parser.reHtmlBlockOpen[blockType].match(s) && (blockType < 7 || container5.type != 9)) {
-				parser3.closeUnmatchedBlocks();
-				parser3.addChild(8,parser3.offset).htmlBlockType = blockType;
-				return 2;
-			}
-		}
-	}
-	return 0;
-},function(parser4,container6) {
-	if(!parser4.indented && container6.type == 9 && commonmark_Parser.reSetextHeadingLine.match(parser4.currentLine.substring(parser4.nextNonspace))) {
-		parser4.closeUnmatchedBlocks();
-		var heading = new commonmark_Node(5,container6.sourcepos);
-		heading.level = commonmark_Parser.reSetextHeadingLine.matched(0).charAt(0) == "="?1:2;
-		heading.string_content = container6.string_content;
-		container6.insertAfter(heading);
-		container6.unlink();
-		parser4.tip = heading;
-		parser4.advanceOffset(parser4.currentLine.length - parser4.offset,false);
-		return 2;
-	} else {
-		return 0;
-	}
-},function(parser5,container7) {
-	if(!parser5.indented && commonmark_Parser.reThematicBreak.match(HxOverrides.substr(parser5.currentLine,parser5.nextNonspace,null))) {
-		parser5.closeUnmatchedBlocks();
-		parser5.addChild(6,parser5.nextNonspace);
-		parser5.advanceOffset(parser5.currentLine.length - parser5.offset,false);
-		return 2;
-	} else {
-		return 0;
-	}
-},function(parser6,container8) {
-	var data;
-	var tmp;
-	if(!parser6.indented || container8.type == 2) {
-		data = commonmark_Parser.parseListMarker(parser6);
-		tmp = data != null;
-	} else {
-		tmp = false;
-	}
-	if(tmp) {
-		parser6.closeUnmatchedBlocks();
-		var tmp1;
-		if(parser6.tip.type == 2) {
-			var list_data = container8.listData;
-			tmp1 = !(list_data.type == data.type && list_data.delimiter == data.delimiter && list_data.bulletChar == data.bulletChar);
-		} else {
-			tmp1 = true;
-		}
-		if(tmp1) {
-			container8 = parser6.addChild(2,parser6.nextNonspace);
-			container8.listData = data;
-		}
-		container8 = parser6.addChild(3,parser6.nextNonspace);
-		container8.listData = data;
-		return 1;
-	} else {
-		return 0;
-	}
-},function(parser7,container9) {
-	if(parser7.indented && parser7.tip.type != 9 && !parser7.blank) {
-		parser7.advanceOffset(4,true);
-		parser7.closeUnmatchedBlocks();
-		parser7.addChild(7,parser7.offset);
-		return 2;
-	} else {
-		return 0;
-	}
-}];
+commonmark_Parser.blockStarts = [commonmark_BlockQuoteBehaviour.tryStart,commonmark_HeadingBehaviour.tryStartATX,commonmark_CodeBlockBehaviour.tryStartFenced,commonmark_HtmlBlockBehaviour.tryStart,commonmark_HeadingBehaviour.tryStartSetext,commonmark_ThematicBreakBehaviour.tryStart,commonmark_ItemBehaviour.tryStart,commonmark_CodeBlockBehaviour.tryStartIndented];
 commonmark_render_HtmlRenderer.reUnsafeProtocol = new EReg("^javascript:|vbscript:|file:|data:","i");
 commonmark_render_HtmlRenderer.reSafeDataProtocol = new EReg("^data:image/(?:png|gif|jpeg|webp)","i");
 Test.main();

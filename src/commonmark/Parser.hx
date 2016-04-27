@@ -12,10 +12,52 @@ typedef ParserOptions = {
 }
 
 interface IBlockBehaviour {
-    function tryContinue(parser:Parser, block:Node):ContinueResult;
+    /**
+        run to check whether the block is continuing
+        at a certain line and offset (e.g. whether a block quote contains a `>`)
+    **/
+    function tryContinue(parser:Parser, block:Node):TryContinueResult;
+
+    /**
+        run when the block is closed
+    **/
     function finalize(parser:Parser, block:Node):Void;
     function canContain(t:NodeType):Bool;
     function acceptsLines():Bool;
+}
+
+@:enum abstract TryStartResult(Int) {
+    /**
+        no match
+    **/
+
+    var BSNoMatch = 0;
+    /**
+        matched container, keep going
+    **/
+    var BSContainer = 1;
+
+    /**
+        matched leaf, no more block starts
+    **/
+    var BSLeaf = 2;
+}
+
+@:enum abstract TryContinueResult(Int) {
+    /**
+        matched
+    **/
+    var CMatched = 0;
+
+    /**
+        not matched
+    **/
+    var CNotMatched = 1;
+
+    /**
+        we've dealt with this line completely, go to next
+    **/
+    var CDone = 2;
 }
 
 @:publicFields
@@ -76,11 +118,29 @@ class BlockQuoteBehaviour implements IBlockBehaviour {
     function finalize(_, _) {};
     function canContain(t:NodeType) return (t != Item);
     function acceptsLines() return false;
+
+    static function tryStart(parser:Parser, block:Node):TryStartResult {
+        if (!parser.indented && Parser.peek(parser.currentLine, parser.nextNonspace) == ">".code) {
+            parser.advanceNextNonspace();
+            parser.advanceOffset(1, false);
+            // optional following space
+            if (Parser.isSpaceOrTab(Parser.peek(parser.currentLine, parser.offset)))
+                parser.advanceOffset(1, true);
+            parser.closeUnmatchedBlocks();
+            parser.addChild(BlockQuote, parser.nextNonspace);
+            return BSContainer;
+        } else {
+            return BSNoMatch;
+        }
+    }
 }
 
 @:publicFields
 @:access(commonmark.Parser)
 class ItemBehaviour implements IBlockBehaviour {
+    static var reBulletListMarker = ~/^[*+-]/;
+    static var reOrderedListMarker = ~/^(\d{1,9})([.)])/;
+
     function new() {}
     function tryContinue(parser:Parser, container:Node) {
         if (parser.blank) {
@@ -98,10 +158,89 @@ class ItemBehaviour implements IBlockBehaviour {
     function finalize(_, _) {}
     function canContain(t:NodeType) return (t != Item);
     function acceptsLines() return false;
+    static function tryStart(parser:Parser, container:Node):TryStartResult {
+        var data;
+        if ((!parser.indented || container.type == List) && (data = parseListMarker(parser)) != null) {
+            parser.closeUnmatchedBlocks();
+
+            // add the list if needed
+            if (parser.tip.type != List || !(listsMatch(container.listData, data))) {
+                container = parser.addChild(List, parser.nextNonspace);
+                container.listData = data;
+            }
+
+            // add the list item
+            container = parser.addChild(Item, parser.nextNonspace);
+            container.listData = data;
+            return BSContainer;
+        } else {
+            return BSNoMatch;
+        }
+    }
+
+    // Parse a list marker and return data on the marker (type,
+    // start, delimiter, bullet character, padding) or null.
+    static function parseListMarker(parser:Parser):ListData {
+        var rest = parser.currentLine.substr(parser.nextNonspace);
+        var data, match;
+        if (reBulletListMarker.match(rest)) {
+            data = new ListData(Bullet, parser.indent);
+            data.bulletChar = reBulletListMarker.matched(0).charAt(0);
+            match = reBulletListMarker.matched(0);
+        } else if (reOrderedListMarker.match(rest)) {
+            data = new ListData(Ordered, parser.indent);
+            data.start = Std.parseInt(reOrderedListMarker.matched(1));
+            data.delimiter = reOrderedListMarker.matched(2);
+            match = reOrderedListMarker.matched(0);
+        } else {
+            return null;
+        }
+        // make sure we have spaces after
+        var nextc = Parser.peek(parser.currentLine, parser.nextNonspace + match.length);
+        if (!(nextc == -1 || nextc == "\t".code || nextc == " ".code)) {
+            return null;
+        }
+
+        // we've got a match! advance offset and calculate padding
+        parser.advanceNextNonspace(); // to start of marker
+        parser.advanceOffset(match.length, true); // to end of marker
+        var spacesStartCol = parser.column;
+        var spacesStartOffset = parser.offset;
+        do {
+            parser.advanceOffset(1, true);
+            nextc = Parser.peek(parser.currentLine, parser.offset);
+        } while (parser.column - spacesStartCol < 5 && Parser.isSpaceOrTab(nextc));
+        var blank_item = Parser.peek(parser.currentLine, parser.offset) == -1;
+        var spaces_after_marker = parser.column - spacesStartCol;
+        if (spaces_after_marker >= 5 || spaces_after_marker < 1 || blank_item) {
+            data.padding = match.length + 1;
+            parser.column = spacesStartCol;
+            parser.offset = spacesStartOffset;
+            if (Parser.isSpaceOrTab(Parser.peek(parser.currentLine, parser.offset))) {
+                parser.advanceOffset(1, true);
+            }
+        } else {
+            data.padding = match.length + spaces_after_marker;
+        }
+        return data;
+    }
+
+    // Returns true if the two list items are of the same type,
+    // with the same delimiter and bullet character.  This is used
+    // in agglomerating list items into lists.
+    static inline function listsMatch(list_data:ListData, item_data:ListData):Bool {
+        return (list_data.type == item_data.type &&
+                list_data.delimiter == item_data.delimiter &&
+                list_data.bulletChar == item_data.bulletChar);
+    }
 }
 
 @:publicFields
+@:access(commonmark.Parser)
 class HeadingBehaviour implements IBlockBehaviour {
+    static var reATXHeadingMarker = ~/^#{1,6}(?: +|$)/;
+    static var reSetextHeadingLine = ~/^(?:=+|-+) *$/;
+
     function new() {}
     function tryContinue(_, _) {
         // a heading can never container > 1 line, so fail to match:
@@ -110,10 +249,45 @@ class HeadingBehaviour implements IBlockBehaviour {
     function finalize(_, _) {};
     function canContain(_) return false;
     function acceptsLines() return false;
+
+    static function tryStartATX(parser:Parser, container:Node):TryStartResult {
+        if (!parser.indented && (reATXHeadingMarker.match(parser.currentLine.substring(parser.nextNonspace)))) {
+            parser.advanceNextNonspace();
+            parser.advanceOffset(reATXHeadingMarker.matched(0).length, false);
+            parser.closeUnmatchedBlocks();
+            var container = parser.addChild(Heading, parser.nextNonspace);
+            container.level = StringTools.trim(reATXHeadingMarker.matched(0)).length; // number of #s
+            // remove trailing ###s:
+            container.string_content = ~/ +#+ *$/.replace(~/^ *#+ *$/.replace(parser.currentLine.substr(parser.offset), ''), '');
+            parser.advanceOffset(parser.currentLine.length - parser.offset);
+            return BSLeaf;
+        } else {
+            return BSNoMatch;
+        }
+    }
+
+    static function tryStartSetext(parser:Parser, container:Node):TryStartResult {
+        if (!parser.indented && container.type == Paragraph && reSetextHeadingLine.match(parser.currentLine.substring(parser.nextNonspace))) {
+            parser.closeUnmatchedBlocks();
+            var heading = new Node(Heading, container.sourcepos);
+            heading.level = reSetextHeadingLine.matched(0).charAt(0) == '=' ? 1 : 2;
+            heading.string_content = container.string_content;
+            container.insertAfter(heading);
+            container.unlink();
+            parser.tip = heading;
+            parser.advanceOffset(parser.currentLine.length - parser.offset, false);
+            return BSLeaf;
+        } else {
+            return BSNoMatch;
+        }
+    }
 }
 
 @:publicFields
+@:access(commonmark.Parser)
 class ThematicBreakBehaviour implements IBlockBehaviour {
+    static var reThematicBreak = ~/^(?:(?:\* *){3,}|(?:_ *){3,}|(?:- *){3,}) *$/;
+
     function new() {}
     function tryContinue(_, _) {
         // a thematic break can never container > 1 line, so fail to match:
@@ -122,18 +296,31 @@ class ThematicBreakBehaviour implements IBlockBehaviour {
     function finalize(_, _) {};
     function canContain(_) return false;
     function acceptsLines() return false;
+    static function tryStart(parser:Parser, container:Node):TryStartResult {
+        if (!parser.indented && reThematicBreak.match(parser.currentLine.substr(parser.nextNonspace))) {
+            parser.closeUnmatchedBlocks();
+            parser.addChild(ThematicBreak, parser.nextNonspace);
+            parser.advanceOffset(parser.currentLine.length - parser.offset, false);
+            return BSLeaf;
+        } else {
+            return BSNoMatch;
+        }
+    }
 }
 
 @:publicFields
 @:access(commonmark.Parser)
 class CodeBlockBehaviour implements IBlockBehaviour {
+    static var reCodeFence = ~/^`{3,}(?!.*`)|^~{3,}(?!.*~)/;
+    static var reClosingCodeFence = ~/^(?:`{3,}|~{3,})(?= *$)/;
+
     function new() {}
     function tryContinue(parser:Parser, container:Node) {
         var ln = parser.currentLine;
         var indent = parser.indent;
         if (container.isFenced) { // fenced
-            var match = indent <= 3 && ln.charAt(parser.nextNonspace) == container.fenceChar && Parser.reClosingCodeFence.match(ln.substr(parser.nextNonspace));
-            if (match && Parser.reClosingCodeFence.matched(0).length >= container.fenceLength) {
+            var match = indent <= 3 && ln.charAt(parser.nextNonspace) == container.fenceChar && reClosingCodeFence.match(ln.substr(parser.nextNonspace));
+            if (match && reClosingCodeFence.matched(0).length >= container.fenceLength) {
                 // closing fence - we're at end of line, so we can return
                 parser.finalize(container, parser.lineNumber);
                 return CDone;
@@ -172,11 +359,51 @@ class CodeBlockBehaviour implements IBlockBehaviour {
     }
     function canContain(_) return false;
     function acceptsLines() return true;
+
+    static function tryStartFenced(parser:Parser, container:Node):TryStartResult {
+        if (!parser.indented && reCodeFence.match(parser.currentLine.substr(parser.nextNonspace))) {
+            var fenceLength = reCodeFence.matched(0).length;
+            parser.closeUnmatchedBlocks();
+            var container = parser.addChild(CodeBlock, parser.nextNonspace);
+            container.isFenced = true;
+            container.fenceLength = fenceLength;
+            container.fenceChar = reCodeFence.matched(0).charAt(0);
+            container.fenceOffset = parser.indent;
+            parser.advanceNextNonspace();
+            parser.advanceOffset(fenceLength, false);
+            return BSLeaf;
+        } else {
+            return BSNoMatch;
+        }
+    }
+
+    static function tryStartIndented(parser:Parser, container:Node):TryStartResult {
+        if (parser.indented && parser.tip.type != Paragraph && !parser.blank) {
+            // indented code
+            parser.advanceOffset(Parser.CODE_INDENT, true);
+            parser.closeUnmatchedBlocks();
+            parser.addChild(CodeBlock, parser.offset);
+            return BSLeaf;
+        } else {
+            return BSNoMatch;
+        }
+    }
 }
 
 @:publicFields
 @:access(commonmark.Parser)
 class HtmlBlockBehaviour implements IBlockBehaviour {
+    static var reHtmlBlockOpen = [
+        ~/./, // dummy for 0
+        ~/^<(?:script|pre|style)(?:\s|>|$)/i,
+        ~/^<!--/,
+        ~/^<[?]/,
+        ~/^<![A-Z]/,
+        ~/^<!\[CDATA\[/,
+        ~/^<[\/]?(?:address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|section|source|title|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)(?:\s|[\/]?[>]|$)/i,
+        new EReg('^(?:' + OPENTAG + '|' + CLOSETAG + ')\\s*$', 'i')
+    ];
+
     function new() {}
     function tryContinue(parser:Parser, container:Node) {
         return ((parser.blank && (container.htmlBlockType == 6 || container.htmlBlockType == 7)) ? CNotMatched : CMatched);
@@ -187,6 +414,22 @@ class HtmlBlockBehaviour implements IBlockBehaviour {
     }
     function canContain(_) return false;
     function acceptsLines() return true;
+    static function tryStart(parser:Parser, container:Node):TryStartResult {
+        if (!parser.indented && Parser.peek(parser.currentLine, parser.nextNonspace) == "<".code) {
+            var s = parser.currentLine.substr(parser.nextNonspace);
+            for (blockType in 1...8) {
+                if (reHtmlBlockOpen[blockType].match(s) && (blockType < 7 || container.type != Paragraph)) {
+                    parser.closeUnmatchedBlocks();
+                    // We don't adjust parser.offset;
+                    // spaces are part of the HTML block:
+                    var b = parser.addChild(HtmlBlock, parser.offset);
+                    b.htmlBlockType = blockType;
+                    return BSLeaf;
+                }
+            }
+        }
+        return BSNoMatch;
+    }
 }
 
 @:publicFields
@@ -211,18 +454,6 @@ class ParagraphBehaviour implements IBlockBehaviour {
     }
     function canContain(_) return false;
     function acceptsLines() return true;
-}
-
-@:enum abstract BlockStartResult(Int) {
-    var BSNoMatch = 0;
-    var BSContainer = 1;
-    var BSLeaf = 2;
-}
-
-@:enum abstract ContinueResult(Int) {
-    var CMatched = 0;
-    var CNotMatched = 1;
-    var CDone = 2;
 }
 
 class Parser {
@@ -250,16 +481,6 @@ class Parser {
 
     static var reLineEnding = ~/\r\n|\n|\r/g;
     static var reMaybeSpecial = ~/^[#`~*+_=<>0-9-]/;
-    static var reHtmlBlockOpen = [
-        ~/./, // dummy for 0
-        ~/^<(?:script|pre|style)(?:\s|>|$)/i,
-        ~/^<!--/,
-        ~/^<[?]/,
-        ~/^<![A-Z]/,
-        ~/^<!\[CDATA\[/,
-        ~/^<[\/]?(?:address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|section|source|title|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)(?:\s|[\/]?[>]|$)/i,
-        new EReg('^(?:' + OPENTAG + '|' + CLOSETAG + ')\\s*$', 'i')
-    ];
     static var reHtmlBlockClose = [
         ~/./, // dummy for 0
         ~/<\/(?:script|pre|style)>/i,
@@ -268,13 +489,6 @@ class Parser {
         ~/>/,
         ~/\]\]>/
     ];
-    static var reATXHeadingMarker = ~/^#{1,6}(?: +|$)/;
-    static var reCodeFence = ~/^`{3,}(?!.*`)|^~{3,}(?!.*~)/;
-    static var reClosingCodeFence = ~/^(?:`{3,}|~{3,})(?= *$)/;
-    static var reSetextHeadingLine = ~/^(?:=+|-+) *$/;
-    static var reThematicBreak = ~/^(?:(?:\* *){3,}|(?:_ *){3,}|(?:- *){3,}) *$/;
-    static var reBulletListMarker = ~/^[*+-]/;
-    static var reOrderedListMarker = ~/^(\d{1,9})([.)])/;
     static var reNonSpace = ~/[^ \t\r\n]/;
 
     static inline function isSpaceOrTab(c:Int):Bool {
@@ -293,12 +507,7 @@ class Parser {
         return !(reNonSpace.match(s));
     }
 
-    // 'finalize' is run when the block is closed.
-    // 'tryContinue' is run to check whether the block is continuing
-    // at a certain line and offset (e.g. whether a block quote
-    // contains a `>`.  It returns 0 for matched, 1 for not matched,
-    // and 2 for "we've dealt with this line completely, go to next."
-    var blocks:Map<NodeType,IBlockBehaviour> = [
+    var blocks = [
         Document => new DocumentBehaviour(),
         List => new ListBehaviour(),
         BlockQuote => new BlockQuoteBehaviour(),
@@ -310,143 +519,15 @@ class Parser {
         Paragraph => new ParagraphBehaviour(),
     ];
 
-    // block start functions.  Return values:
-    // 0 = no match
-    // 1 = matched container, keep going
-    // 2 = matched leaf, no more block starts
-    static var blockStarts:Array<Parser->Node->BlockStartResult> = [
-        // block quote
-        function(parser, container) {
-            if (!parser.indented && peek(parser.currentLine, parser.nextNonspace) == ">".code) {
-                parser.advanceNextNonspace();
-                parser.advanceOffset(1, false);
-                // optional following space
-                if (isSpaceOrTab(peek(parser.currentLine, parser.offset)))
-                    parser.advanceOffset(1, true);
-                parser.closeUnmatchedBlocks();
-                parser.addChild(BlockQuote, parser.nextNonspace);
-                return BSContainer;
-            } else {
-                return BSNoMatch;
-            }
-        },
-
-        // ATX heading
-        function(parser, container) {
-            if (!parser.indented && (reATXHeadingMarker.match(parser.currentLine.substring(parser.nextNonspace)))) {
-                parser.advanceNextNonspace();
-                parser.advanceOffset(reATXHeadingMarker.matched(0).length, false);
-                parser.closeUnmatchedBlocks();
-                var container = parser.addChild(Heading, parser.nextNonspace);
-                container.level = StringTools.trim(reATXHeadingMarker.matched(0)).length; // number of #s
-                // remove trailing ###s:
-                container.string_content = ~/ +#+ *$/.replace(~/^ *#+ *$/.replace(parser.currentLine.substr(parser.offset), ''), '');
-                parser.advanceOffset(parser.currentLine.length - parser.offset);
-                return BSLeaf;
-            } else {
-                return BSNoMatch;
-            }
-        },
-
-        // Fenced code block
-        function(parser, container) {
-            if (!parser.indented && reCodeFence.match(parser.currentLine.substr(parser.nextNonspace))) {
-                var fenceLength = reCodeFence.matched(0).length;
-                parser.closeUnmatchedBlocks();
-                var container = parser.addChild(CodeBlock, parser.nextNonspace);
-                container.isFenced = true;
-                container.fenceLength = fenceLength;
-                container.fenceChar = reCodeFence.matched(0).charAt(0);
-                container.fenceOffset = parser.indent;
-                parser.advanceNextNonspace();
-                parser.advanceOffset(fenceLength, false);
-                return BSLeaf;
-            } else {
-                return BSNoMatch;
-            }
-        },
-
-        // HTML block
-        function(parser, container) {
-            if (!parser.indented && peek(parser.currentLine, parser.nextNonspace) == "<".code) {
-                var s = parser.currentLine.substr(parser.nextNonspace);
-                for (blockType in 1...8) {
-                    if (reHtmlBlockOpen[blockType].match(s) && (blockType < 7 || container.type != Paragraph)) {
-                        parser.closeUnmatchedBlocks();
-                        // We don't adjust parser.offset;
-                        // spaces are part of the HTML block:
-                        var b = parser.addChild(HtmlBlock, parser.offset);
-                        b.htmlBlockType = blockType;
-                        return BSLeaf;
-                    }
-                }
-            }
-            return BSNoMatch;
-        },
-
-        // Setext heading
-        function(parser, container) {
-            if (!parser.indented && container.type == Paragraph && reSetextHeadingLine.match(parser.currentLine.substring(parser.nextNonspace))) {
-                parser.closeUnmatchedBlocks();
-                var heading = new Node(Heading, container.sourcepos);
-                heading.level = reSetextHeadingLine.matched(0).charAt(0) == '=' ? 1 : 2;
-                heading.string_content = container.string_content;
-                container.insertAfter(heading);
-                container.unlink();
-                parser.tip = heading;
-                parser.advanceOffset(parser.currentLine.length - parser.offset, false);
-                return BSLeaf;
-            } else {
-                return BSNoMatch;
-            }
-        },
-
-        // hrule
-        function(parser, container) {
-            if (!parser.indented && reThematicBreak.match(parser.currentLine.substr(parser.nextNonspace))) {
-                parser.closeUnmatchedBlocks();
-                parser.addChild(ThematicBreak, parser.nextNonspace);
-                parser.advanceOffset(parser.currentLine.length - parser.offset, false);
-                return BSLeaf;
-            } else {
-                return BSNoMatch;
-            }
-        },
-
-        // list item
-        function(parser, container) {
-            var data;
-            if ((!parser.indented || container.type == List) && (data = parseListMarker(parser)) != null) {
-                parser.closeUnmatchedBlocks();
-
-                // add the list if needed
-                if (parser.tip.type != List || !(listsMatch(container.listData, data))) {
-                    container = parser.addChild(List, parser.nextNonspace);
-                    container.listData = data;
-                }
-
-                // add the list item
-                container = parser.addChild(Item, parser.nextNonspace);
-                container.listData = data;
-                return BSContainer;
-            } else {
-                return BSNoMatch;
-            }
-        },
-
-        // indented code block
-        function(parser, container) {
-            if (parser.indented && parser.tip.type != Paragraph && !parser.blank) {
-                // indented code
-                parser.advanceOffset(CODE_INDENT, true);
-                parser.closeUnmatchedBlocks();
-                parser.addChild(CodeBlock, parser.offset);
-                return BSLeaf;
-            } else {
-                return BSNoMatch;
-            }
-         }
-
+    static var blockStarts = [
+        BlockQuoteBehaviour.tryStart,
+        HeadingBehaviour.tryStartATX,
+        CodeBlockBehaviour.tryStartFenced,
+        HtmlBlockBehaviour.tryStart,
+        HeadingBehaviour.tryStartSetext,
+        ThematicBreakBehaviour.tryStart,
+        ItemBehaviour.tryStart,
+        CodeBlockBehaviour.tryStartIndented,
     ];
 
     public function new(?options:ParserOptions) {
@@ -783,62 +864,6 @@ class Parser {
                 count -= 1;
             }
         }
-    }
-
-    // Parse a list marker and return data on the marker (type,
-    // start, delimiter, bullet character, padding) or null.
-    static function parseListMarker(parser:Parser):ListData {
-        var rest = parser.currentLine.substr(parser.nextNonspace);
-        var data, match;
-        if (reBulletListMarker.match(rest)) {
-            data = new ListData(Bullet, parser.indent);
-            data.bulletChar = reBulletListMarker.matched(0).charAt(0);
-            match = reBulletListMarker.matched(0);
-        } else if (reOrderedListMarker.match(rest)) {
-            data = new ListData(Ordered, parser.indent);
-            data.start = Std.parseInt(reOrderedListMarker.matched(1));
-            data.delimiter = reOrderedListMarker.matched(2);
-            match = reOrderedListMarker.matched(0);
-        } else {
-            return null;
-        }
-        // make sure we have spaces after
-        var nextc = peek(parser.currentLine, parser.nextNonspace + match.length);
-        if (!(nextc == -1 || nextc == "\t".code || nextc == " ".code)) {
-            return null;
-        }
-
-        // we've got a match! advance offset and calculate padding
-        parser.advanceNextNonspace(); // to start of marker
-        parser.advanceOffset(match.length, true); // to end of marker
-        var spacesStartCol = parser.column;
-        var spacesStartOffset = parser.offset;
-        do {
-            parser.advanceOffset(1, true);
-            nextc = peek(parser.currentLine, parser.offset);
-        } while (parser.column - spacesStartCol < 5 && isSpaceOrTab(nextc));
-        var blank_item = peek(parser.currentLine, parser.offset) == -1;
-        var spaces_after_marker = parser.column - spacesStartCol;
-        if (spaces_after_marker >= 5 || spaces_after_marker < 1 || blank_item) {
-            data.padding = match.length + 1;
-            parser.column = spacesStartCol;
-            parser.offset = spacesStartOffset;
-            if (isSpaceOrTab(peek(parser.currentLine, parser.offset))) {
-                parser.advanceOffset(1, true);
-            }
-        } else {
-            data.padding = match.length + spaces_after_marker;
-        }
-        return data;
-    }
-
-    // Returns true if the two list items are of the same type,
-    // with the same delimiter and bullet character.  This is used
-    // in agglomerating list items into lists.
-    static inline function listsMatch(list_data:ListData, item_data:ListData):Bool {
-        return (list_data.type == item_data.type &&
-                list_data.delimiter == item_data.delimiter &&
-                list_data.bulletChar == item_data.bulletChar);
     }
 
     // Returns true if block ends with a blank line, descending if needed
