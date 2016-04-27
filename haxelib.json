@@ -1,6 +1,6 @@
 {
     "name": "commonmark",
-    "version": "0.24.0",
+    "version": "0.25.1",
     "releasenote": "Initial release",
     "license": "MIT",
     "classPath": "src",
