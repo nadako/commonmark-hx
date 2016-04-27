@@ -536,8 +536,6 @@ class Parser {
                 case CDone: // we've hit end of line for fenced code close and can return
                     lastLineLength = ln.length;
                     return;
-                default:
-                    throw 'continue returned illegal value, must be 0, 1, or 2';
             }
             if (!all_matched) {
                 container = container.parent; // back up to last matching block

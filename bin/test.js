@@ -1671,8 +1671,6 @@ commonmark_Parser.prototype = {
 			case 2:
 				this.lastLineLength = ln.length;
 				return;
-			default:
-				throw new js__$Boot_HaxeError("continue returned illegal value, must be 0, 1, or 2");
 			}
 			if(!all_matched) {
 				container = lastChild.parent;
