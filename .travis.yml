@@ -29,15 +29,14 @@ matrix:
             - mono-devel
             - mono-mcs
 
-    - env: TARGET=java
-      install:
-        - haxelib install hxjava
+    # - env: TARGET=java
+    #   install:
+    #     - haxelib install hxjava
 
     # - env: TARGET=neko
 
 install:
 
 script:
-  - mkdir bin
   - haxe travis.hxml
   - neko bin/travis.n
