@@ -63,7 +63,7 @@ class BlockQuoteBehaviour implements IBlockBehaviour {
     function new() {}
     function doContinue(parser:Parser, _) {
         var ln = parser.currentLine;
-        if (!parser.indented && Parser.peek(ln, parser.nextNonspace) == Parser.C_GREATERTHAN) {
+        if (!parser.indented && Parser.peek(ln, parser.nextNonspace) == ">".code) {
             parser.advanceNextNonspace();
             parser.advanceOffset(1, false);
             if (Parser.isSpaceOrTab(Parser.peek(ln, parser.offset)))
@@ -201,7 +201,7 @@ class ParagraphBehaviour implements IBlockBehaviour {
         var hasReferenceDefs = false;
 
         // try parsing the beginning as link reference definitions:
-        while (Parser.peek(block.string_content, 0) == Parser.C_OPEN_BRACKET && (pos = parser.inlineParser.parseReference(block.string_content, parser.refmap)) != 0) {
+        while (Parser.peek(block.string_content, 0) == "[".code && (pos = parser.inlineParser.parseReference(block.string_content, parser.refmap)) != 0) {
             block.string_content = block.string_content.substr(pos);
             hasReferenceDefs = true;
         }
@@ -247,11 +247,6 @@ class Parser {
     var options:ParserOptions;
 
     static inline var CODE_INDENT = 4;
-
-    static inline var C_GREATERTHAN = 62;
-    static inline var C_LESSTHAN = 60;
-    static inline var C_SPACE = 32;
-    static inline var C_OPEN_BRACKET = 91;
 
     static var reLineEnding = ~/\r\n|\n|\r/g;
     static var reMaybeSpecial = ~/^[#`~*+_=<>0-9-]/;
@@ -322,7 +317,7 @@ class Parser {
     static var blockStarts:Array<Parser->Node->BlockStartResult> = [
         // block quote
         function(parser, container) {
-            if (!parser.indented && peek(parser.currentLine, parser.nextNonspace) == C_GREATERTHAN) {
+            if (!parser.indented && peek(parser.currentLine, parser.nextNonspace) == ">".code) {
                 parser.advanceNextNonspace();
                 parser.advanceOffset(1, false);
                 // optional following space
@@ -373,7 +368,7 @@ class Parser {
 
         // HTML block
         function(parser, container) {
-            if (!parser.indented && peek(parser.currentLine, parser.nextNonspace) == C_LESSTHAN) {
+            if (!parser.indented && peek(parser.currentLine, parser.nextNonspace) == "<".code) {
                 var s = parser.currentLine.substr(parser.nextNonspace);
                 for (blockType in 1...8) {
                     if (reHtmlBlockOpen[blockType].match(s) && (blockType < 7 || container.type != Paragraph)) {
