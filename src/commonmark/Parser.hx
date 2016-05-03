@@ -847,7 +847,7 @@ class Parser {
                     var charsToAdvance = charsToTab > count ? count : charsToTab;
                     column += charsToAdvance;
                     offset += partiallyConsumedTab ? 0 : 1;
-                    count -= (columns ? charsToAdvance : 1);
+                    count -= charsToAdvance;
                 } else {
                     partiallyConsumedTab = false;
                     column += charsToTab;

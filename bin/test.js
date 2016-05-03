@@ -2015,7 +2015,7 @@ commonmark_Parser.prototype = {
 					var charsToAdvance = charsToTab > count?count:charsToTab;
 					this.column += charsToAdvance;
 					this.offset += this.partiallyConsumedTab?0:1;
-					count -= columns?charsToAdvance:1;
+					count -= charsToAdvance;
 				} else {
 					this.partiallyConsumedTab = false;
 					this.column += charsToTab;
