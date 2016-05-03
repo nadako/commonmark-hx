@@ -839,9 +839,9 @@ class Parser {
         var cols = 0;
         var currentLine = this.currentLine;
         var c;
-        while (count > 0 && (c = currentLine.charAt(this.offset)) != null) {
+        while (count > 0 && (c = currentLine.charAt(offset)) != null) {
             if (c == "\t") {
-                var charsToTab = 4 - (this.column % 4);
+                var charsToTab = 4 - (column % 4);
                 if (columns) {
                     partiallyConsumedTab = charsToTab > count;
                     var charsToAdvance = charsToTab > count ? count : charsToTab;
@@ -857,8 +857,8 @@ class Parser {
             } else {
                 partiallyConsumedTab = false;
                 cols += 1;
-                this.offset += 1;
-                this.column += 1; // assume ascii; block starts are ascii
+                offset += 1;
+                column += 1; // assume ascii; block starts are ascii
                 count -= 1;
             }
         }
