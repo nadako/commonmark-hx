@@ -836,7 +836,6 @@ class Parser {
     }
 
     function advanceOffset(count:Int, columns = false):Void {
-        var cols = 0;
         var currentLine = this.currentLine;
         var c;
         while (count > 0 && (c = currentLine.charAt(offset)) != null) {
@@ -856,7 +855,6 @@ class Parser {
                 }
             } else {
                 partiallyConsumedTab = false;
-                cols += 1;
                 offset += 1;
                 column += 1; // assume ascii; block starts are ascii
                 count -= 1;
