@@ -1807,10 +1807,6 @@ commonmark_Parser.prototype = {
 		}
 		this.allClosed = container == this.oldtip;
 		this.lastMatchedContainer = container;
-		if(this.blank && container.lastLineBlank) {
-			this.breakOutOfLists(container);
-			container = this.tip;
-		}
 		var matchedLeaf = container.type != 9 && this.blocks.h[container.type].acceptsLines();
 		var starts = commonmark_Parser.blockStarts;
 		var startsLen = starts.length;
@@ -1947,27 +1943,6 @@ commonmark_Parser.prototype = {
 		this.nextNonspace = i;
 		this.nextNonspaceColumn = cols;
 		this.indent = this.nextNonspaceColumn - this.column;
-	}
-	,breakOutOfLists: function(block) {
-		var b = block;
-		var last_list = null;
-		while(true) {
-			if(b.type == 2) {
-				last_list = b;
-			}
-			b = b.parent;
-			if(!(b != null)) {
-				break;
-			}
-		}
-		if(last_list != null) {
-			while(block != last_list) {
-				this.finalize(block,this.lineNumber);
-				block = block.parent;
-			}
-			this.finalize(last_list,this.lineNumber);
-			this.tip = last_list.parent;
-		}
 	}
 	,closeUnmatchedBlocks: function() {
 		if(this.allClosed) {

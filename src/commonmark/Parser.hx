@@ -626,12 +626,6 @@ class Parser {
         allClosed = (container == oldtip);
         lastMatchedContainer = container;
 
-        // Check to see if we've hit 2nd blank line; if so break out of list:
-        if (blank && container.lastLineBlank) {
-            breakOutOfLists(container);
-            container = tip;
-        }
-
         var matchedLeaf = container.type != Paragraph && blocks[container.type].acceptsLines();
         var starts = blockStarts;
         var startsLen = starts.length;
@@ -764,29 +758,6 @@ class Parser {
     }
 
     inline function get_indented() return indent >= CODE_INDENT;
-
-    // Break out of all containing lists, resetting the tip of the
-    // document to the parent of the highest list, and finalizing
-    // all the lists.  (This is used to implement the "two blank lines
-    // break out of all lists" feature.)
-    function breakOutOfLists(block:Node):Void {
-        var b = block;
-        var last_list = null;
-        do {
-            if (b.type == List)
-                last_list = b;
-            b = b.parent;
-        } while (b != null);
-
-        if (last_list != null) {
-            while (block != last_list) {
-                finalize(block, lineNumber);
-                block = block.parent;
-            }
-            finalize(last_list, lineNumber);
-            tip = last_list.parent;
-        }
-    }
 
     inline function advanceNextNonspace():Void {
         offset = nextNonspace;
