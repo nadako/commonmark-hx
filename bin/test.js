@@ -1374,6 +1374,9 @@ commonmark_ItemBehaviour.parseListMarker = function(parser,container) {
 	if(!(nextc == -1 || nextc == 9 || nextc == 32)) {
 		return null;
 	}
+	if(container.type == 9 && !commonmark_Parser.reNonSpace.match(parser.currentLine.substring(parser.nextNonspace + match.length))) {
+		return null;
+	}
 	parser.offset = parser.nextNonspace;
 	parser.column = parser.nextNonspaceColumn;
 	parser.partiallyConsumedTab = false;

@@ -201,6 +201,10 @@ class ItemBehaviour implements IBlockBehaviour {
             return null;
         }
 
+        // if it interrupts paragraph, make sure first line isn't blank
+        if (container.type == Paragraph && !Parser.reNonSpace.match(parser.currentLine.substring(parser.nextNonspace + match.length)))
+            return null;
+
         // we've got a match! advance offset and calculate padding
         parser.advanceNextNonspace(); // to start of marker
         parser.advanceOffset(match.length, true); // to end of marker
