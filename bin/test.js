@@ -1358,7 +1358,7 @@ commonmark_ItemBehaviour.parseListMarker = function(parser,container) {
 		data = new commonmark_ListData(2,parser.indent);
 		data.bulletChar = commonmark_ItemBehaviour.reBulletListMarker.matched(0).charAt(0);
 		match = commonmark_ItemBehaviour.reBulletListMarker.matched(0);
-	} else if(commonmark_ItemBehaviour.reOrderedListMarker.match(rest) && (container.type == 9 || commonmark_ItemBehaviour.reOrderedListMarker.matched(1) == "1")) {
+	} else if(commonmark_ItemBehaviour.reOrderedListMarker.match(rest) && (container.type != 9 || commonmark_ItemBehaviour.reOrderedListMarker.matched(1) == "1")) {
 		data = new commonmark_ListData(1,parser.indent);
 		data.start = Std.parseInt(commonmark_ItemBehaviour.reOrderedListMarker.matched(1));
 		data.delimiter = commonmark_ItemBehaviour.reOrderedListMarker.matched(2);

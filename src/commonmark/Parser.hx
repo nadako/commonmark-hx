@@ -187,7 +187,7 @@ class ItemBehaviour implements IBlockBehaviour {
             data = new ListData(Bullet, parser.indent);
             data.bulletChar = reBulletListMarker.matched(0).charAt(0);
             match = reBulletListMarker.matched(0);
-        } else if (reOrderedListMarker.match(rest) && (container.type == Paragraph || reOrderedListMarker.matched(1) == "1")) {
+        } else if (reOrderedListMarker.match(rest) && (container.type != Paragraph || reOrderedListMarker.matched(1) == "1")) {
             data = new ListData(Ordered, parser.indent);
             data.start = Std.parseInt(reOrderedListMarker.matched(1));
             data.delimiter = reOrderedListMarker.matched(2);
