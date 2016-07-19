@@ -17,11 +17,14 @@ class Delimiter {
     var numdelims:Int;
     var node:Node;
     var previous:Delimiter;
+    var previousDelimiter:Delimiter;
+    var image:Bool;
     var next:Delimiter;
     var can_open:Bool;
     var can_close:Bool;
     var active:Bool;
     var index:Int;
+    var bracketAfter:Bool;
     function new() {}
 }
 
@@ -43,6 +46,7 @@ class InlineParser {
     public var options:InlineParserOptions;
     var subject:String;
     var pos:Int;
+    var brackets:Delimiter;
     var delimiters:Delimiter; // used by handleDelim method
     public var refmap:Map<String,Ref>;
 
@@ -121,6 +125,7 @@ class InlineParser {
         subject = StringTools.trim(block.string_content);
         pos = 0;
         delimiters = null;
+        brackets = null;
         while (parseInline(block)) {}
         block.string_content = null; // allow raw string to be garbage collected
         processEmphasis(null);
@@ -241,7 +246,7 @@ class InlineParser {
             d.next = null;
             d.can_open = res.can_open;
             d.can_close = res.can_close;
-            d.active = true;
+            d.active = false;
             d;
         };
 
@@ -379,21 +384,7 @@ class InlineParser {
             block.appendChild(node);
 
             // Add entry to stack for this opener
-            delimiters = {
-                var d = new Delimiter();
-                d.cc = C_BANG;
-                d.numdelims = 1;
-                d.node = node;
-                d.previous = delimiters;
-                d.next = null;
-                d.can_open = true;
-                d.can_close = false;
-                d.index = startpos + 1;
-                d.active = true;
-                d;
-            };
-            if (delimiters.previous != null)
-                delimiters.previous.next = delimiters;
+            addBracket(node, startpos + 1, true);
         } else {
             block.appendChild(text('!'));
         }
@@ -409,23 +400,26 @@ class InlineParser {
         block.appendChild(node);
 
         // Add entry to stack for this opener
-        delimiters = {
-            var d = new Delimiter();
-            d.cc = C_OPEN_BRACKET;
-            d.numdelims = 1;
-            d.node = node;
-            d.previous = delimiters;
-            d.next = null;
-            d.can_open = true;
-            d.can_close = false;
-            d.index = startpos;
-            d.active = true;
-            d;
-        };
-        if (delimiters.previous != null)
-            delimiters.previous.next = delimiters;
-
+        addBracket(node, startpos, false);
         return true;
+    }
+
+    function addBracket(node:Node, index:Int, image:Bool) {
+        if (brackets != null)
+            brackets.bracketAfter = true;
+
+        var d = new Delimiter();
+        d.node = node;
+        d.previous = brackets;
+        d.previousDelimiter = delimiters;
+        d.index = index;
+        d.image = image;
+        d.active = true;
+        brackets = d;
+    }
+
+    inline function removeBracket() {
+        brackets = brackets.previous;
     }
 
     // Attempt to parse an autolink (URL or email in pointy brackets).
@@ -497,8 +491,8 @@ class InlineParser {
         pos++;
         var startpos = pos;
 
-        // look through stack of delimiters for a [ or ![
-        var opener = delimiters;
+        // get last [ or ![
+        var opener = brackets;
 
         while (opener != null) {
             if (opener.cc == C_OPEN_BRACKET || opener.cc == C_BANG)
@@ -515,13 +509,13 @@ class InlineParser {
         if (!opener.active) {
             // no matched opener, just return a literal
             block.appendChild(text(']'));
-            // take opener off emphasis stack
-            removeDelimiter(opener);
+            // take opener off brackets stack
+            removeBracket();
             return true;
         }
 
         // If we got here, open is a potential opener
-        var is_image = opener.cc == C_BANG;
+        var is_image = opener.image;
 
         // Check to see if we have a link/image
 
@@ -545,25 +539,28 @@ class InlineParser {
             // Next, see if there's a link label
             var savepos = pos;
             var beforelabel = pos;
-            var reflabel;
+            var reflabel = null;
             var n = parseLinkLabel();
-            if (n == 0 || n == 2) {
-                // empty or missing second label
-                reflabel = subject.substring(opener.index, startpos);
-            } else {
+            if (n > 2) {
                 reflabel = subject.substring(beforelabel, beforelabel + n);
+            } else if (!opener.bracketAfter) {
+                // Empty or missing second label means to use the first label as the reference.
+                // The reference must not contain a bracket. If we know there's a bracket, we don't even bother checking it.
+                reflabel = subject.substring(opener.index, startpos);
             }
             if (n == 0) {
                 // If shortcut reference link, rewind before spaces we skipped.
                 pos = savepos;
             }
 
-            // lookup rawlabel in refmap
-            var link = refmap[normalizeReference(reflabel)];
-            if (link != null) {
-                dest = link.destination;
-                title = link.title;
-                matched = true;
+            if (reflabel != null || reflabel.length > 0) {
+                // lookup rawlabel in refmap
+                var link = refmap[normalizeReference(reflabel)];
+                if (link != null) {
+                    dest = link.destination;
+                    title = link.title;
+                    matched = true;
+                }
             }
         }
 
@@ -580,17 +577,17 @@ class InlineParser {
                 tmp = next;
             }
             block.appendChild(node);
-            processEmphasis(opener.previous);
-
+            processEmphasis(opener.previousDelimiter);
+            removeBracket();
             opener.node.unlink();
 
-            // processEmphasis will remove this and later delimiters.
+            // We remove this bracket and processEmphasis will remove later delimiters.
             // Now, for a link, we also deactivate earlier link openers.
             // (no links in links)
             if (!is_image) {
-              opener = delimiters;
+              opener = brackets;
               while (opener != null) {
-                if (opener.cc == C_OPEN_BRACKET) {
+                if (!opener.image) {
                     opener.active = false; // deactivate this opener
                 }
                 opener = opener.previous;
@@ -599,7 +596,7 @@ class InlineParser {
 
             return true;
         } else { // no match
-            removeDelimiter(opener);  // remove this opener from stack
+            removeBracket();  // remove this opener from stack
             pos = startpos;
             block.appendChild(text(']'));
             return true;
@@ -666,7 +663,7 @@ class InlineParser {
         // move forward, looking for closers, and handling each
         while (closer != null) {
             var closercc = closer.cc;
-            if (!(closer.can_close && (closercc == C_UNDERSCORE || closercc == C_ASTERISK || closercc == C_SINGLEQUOTE || closercc == C_DOUBLEQUOTE))) {
+            if (!closer.can_close) {
                 closer = closer.next;
             } else {
                 // found emphasis closer. now look back for first matching opener:
