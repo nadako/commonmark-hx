@@ -494,12 +494,6 @@ class InlineParser {
         // get last [ or ![
         var opener = brackets;
 
-        while (opener != null) {
-            if (opener.cc == C_OPEN_BRACKET || opener.cc == C_BANG)
-                break;
-            opener = opener.previous;
-        }
-
         if (opener == null) {
             // no matched opener, just return a literal
             block.appendChild(text(']'));

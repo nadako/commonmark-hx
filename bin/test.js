@@ -798,12 +798,6 @@ commonmark_InlineParser.prototype = {
 		this.pos++;
 		var startpos = this.pos;
 		var opener = this.brackets;
-		while(opener != null) {
-			if(opener.cc == 91 || opener.cc == 33) {
-				break;
-			}
-			opener = opener.previous;
-		}
 		if(opener == null) {
 			block.appendChild(this.text("]"));
 			return true;
