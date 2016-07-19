@@ -238,7 +238,7 @@ class ItemBehaviour implements IBlockBehaviour {
 @:publicFields
 @:access(commonmark.Parser)
 class HeadingBehaviour implements IBlockBehaviour {
-    static var reATXHeadingMarker = ~/^#{1,6}(?: +|$)/;
+    static var reATXHeadingMarker = ~/^#{1,6}(?:[ \t]+|$)/;
     static var reSetextHeadingLine = ~/^(?:=+|-+) *$/;
 
     function new() {}
@@ -286,7 +286,7 @@ class HeadingBehaviour implements IBlockBehaviour {
 @:publicFields
 @:access(commonmark.Parser)
 class ThematicBreakBehaviour implements IBlockBehaviour {
-    static var reThematicBreak = ~/^(?:(?:\* *){3,}|(?:_ *){3,}|(?:- *){3,}) *$/;
+    static var reThematicBreak = ~/^(?:(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,})[ \t]*$/;
 
     function new() {}
     function tryContinue(_, _) {

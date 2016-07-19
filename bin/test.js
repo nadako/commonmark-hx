@@ -2607,9 +2607,9 @@ commonmark_InlineParser.reLinkLabel = new EReg("^\\[(?:[^\\\\\\[\\]]|" + commonm
 commonmark_InlineParser.reSpaceAtEndOfLine = new EReg("^ *(?:\n|$)","");
 commonmark_ItemBehaviour.reBulletListMarker = new EReg("^[*+-]","");
 commonmark_ItemBehaviour.reOrderedListMarker = new EReg("^(\\d{1,9})([.)])","");
-commonmark_HeadingBehaviour.reATXHeadingMarker = new EReg("^#{1,6}(?: +|$)","");
+commonmark_HeadingBehaviour.reATXHeadingMarker = new EReg("^#{1,6}(?:[ \t]+|$)","");
 commonmark_HeadingBehaviour.reSetextHeadingLine = new EReg("^(?:=+|-+) *$","");
-commonmark_ThematicBreakBehaviour.reThematicBreak = new EReg("^(?:(?:\\* *){3,}|(?:_ *){3,}|(?:- *){3,}) *$","");
+commonmark_ThematicBreakBehaviour.reThematicBreak = new EReg("^(?:(?:\\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,})[ \t]*$","");
 commonmark_CodeBlockBehaviour.reCodeFence = new EReg("^`{3,}(?!.*`)|^~{3,}(?!.*~)","");
 commonmark_CodeBlockBehaviour.reClosingCodeFence = new EReg("^(?:`{3,}|~{3,})(?= *$)","");
 commonmark_HtmlBlockBehaviour.reHtmlBlockOpen = [new EReg(".",""),new EReg("^<(?:script|pre|style)(?:\\s|>|$)","i"),new EReg("^<!--",""),new EReg("^<[?]",""),new EReg("^<![A-Z]",""),new EReg("^<!\\[CDATA\\[",""),new EReg("^<[/]?(?:address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h1|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|section|source|title|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)(?:\\s|[/]?[>]|$)","i"),new EReg("^(?:" + commonmark_Common.OPENTAG + "|" + commonmark_Common.CLOSETAG + ")\\s*$","i")];
