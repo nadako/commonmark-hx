@@ -4,8 +4,8 @@
 
 This is a port the [JavaScript reference implementation](https://github.com/jgm/commonmark.js) of the [CommonMark](http://commonmark.org/) spec.
 
-* Current spec version version: 0.25
-* Corresponding JS implementation commit: https://github.com/jgm/commonmark.js/commit/fd21a0a3140ba67e43879e57963ab6d14222f51c
+* Current spec version version: 0.26
+* Corresponding JS implementation commit: https://github.com/jgm/commonmark.js/commit/2a569ad9b4bb839e88bae03b4c1e5de176bcf357
 
 It's currently only passes CommonMark spec tests on *JavaScript* and *C#* targets.
 
