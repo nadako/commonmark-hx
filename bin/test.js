@@ -429,6 +429,9 @@ commonmark_Common.unescapeChar = function(s) {
 var commonmark_Delimiter = function() {
 };
 commonmark_Delimiter.__name__ = true;
+var commonmark_Bracket = function() {
+};
+commonmark_Bracket.__name__ = true;
 var commonmark_InlineParser = function(options) {
 	if(options == null) {
 		options = { smart : false};
@@ -570,7 +573,6 @@ commonmark_InlineParser.prototype = {
 		d.next = null;
 		d.can_open = res.can_open;
 		d.can_close = res.can_close;
-		d.active = false;
 		this.delimiters = d;
 		if(this.delimiters.previous != null) {
 			this.delimiters.previous.next = this.delimiters;
@@ -717,7 +719,7 @@ commonmark_InlineParser.prototype = {
 		if(this.brackets != null) {
 			this.brackets.bracketAfter = true;
 		}
-		var d = new commonmark_Delimiter();
+		var d = new commonmark_Bracket();
 		d.node = node;
 		d.previous = this.brackets;
 		d.previousDelimiter = this.delimiters;

@@ -17,14 +17,21 @@ class Delimiter {
     var numdelims:Int;
     var node:Node;
     var previous:Delimiter;
-    var previousDelimiter:Delimiter;
-    var image:Bool;
     var next:Delimiter;
     var can_open:Bool;
     var can_close:Bool;
+    function new() {}
+}
+
+@:publicFields
+class Bracket {
+    var node:Node;
+    var previous:Bracket;
+    var previousDelimiter:Delimiter;
+    var image:Bool;
     var active:Bool;
-    var index:Int;
     var bracketAfter:Bool;
+    var index:Int;
     function new() {}
 }
 
@@ -46,7 +53,7 @@ class InlineParser {
     public var options:InlineParserOptions;
     var subject:String;
     var pos:Int;
-    var brackets:Delimiter;
+    var brackets:Bracket;
     var delimiters:Delimiter; // used by handleDelim method
     public var refmap:Map<String,Ref>;
 
@@ -246,7 +253,6 @@ class InlineParser {
             d.next = null;
             d.can_open = res.can_open;
             d.can_close = res.can_close;
-            d.active = false;
             d;
         };
 
@@ -408,7 +414,7 @@ class InlineParser {
         if (brackets != null)
             brackets.bracketAfter = true;
 
-        var d = new Delimiter();
+        var d = new Bracket();
         d.node = node;
         d.previous = brackets;
         d.previousDelimiter = delimiters;
