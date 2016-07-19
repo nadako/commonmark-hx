@@ -872,7 +872,7 @@ commonmark_InlineParser.prototype = {
 			if(n == 0) {
 				this.pos = savepos;
 			}
-			if(reflabel != null || reflabel.length > 0) {
+			if(reflabel != null && reflabel.length > 0) {
 				var key = commonmark_InlineParser.normalizeReference(reflabel);
 				var _this = this.refmap;
 				var link = __map_reserved[key] != null?_this.getReserved(key):_this.h[key];

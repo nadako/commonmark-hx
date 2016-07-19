@@ -547,7 +547,7 @@ class InlineParser {
                 pos = savepos;
             }
 
-            if (reflabel != null || reflabel.length > 0) {
+            if (reflabel != null && reflabel.length > 0) {
                 // lookup rawlabel in refmap
                 var link = refmap[normalizeReference(reflabel)];
                 if (link != null) {
