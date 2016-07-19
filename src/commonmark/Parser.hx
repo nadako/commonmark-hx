@@ -160,7 +160,7 @@ class ItemBehaviour implements IBlockBehaviour {
     function acceptsLines() return false;
     static function tryStart(parser:Parser, container:Node):TryStartResult {
         var data;
-        if ((!parser.indented || container.type == List) && (data = parseListMarker(parser)) != null) {
+        if ((!parser.indented || container.type == List) && (data = parseListMarker(parser, container)) != null) {
             parser.closeUnmatchedBlocks();
 
             // add the list if needed
@@ -180,14 +180,14 @@ class ItemBehaviour implements IBlockBehaviour {
 
     // Parse a list marker and return data on the marker (type,
     // start, delimiter, bullet character, padding) or null.
-    static function parseListMarker(parser:Parser):ListData {
+    static function parseListMarker(parser:Parser, container:Node):ListData {
         var rest = parser.currentLine.substr(parser.nextNonspace);
         var data, match;
         if (reBulletListMarker.match(rest)) {
             data = new ListData(Bullet, parser.indent);
             data.bulletChar = reBulletListMarker.matched(0).charAt(0);
             match = reBulletListMarker.matched(0);
-        } else if (reOrderedListMarker.match(rest)) {
+        } else if (reOrderedListMarker.match(rest) && (container.type == Paragraph || reOrderedListMarker.matched(1) == "1")) {
             data = new ListData(Ordered, parser.indent);
             data.start = Std.parseInt(reOrderedListMarker.matched(1));
             data.delimiter = reOrderedListMarker.matched(2);

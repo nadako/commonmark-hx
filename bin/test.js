@@ -1329,7 +1329,7 @@ commonmark_ItemBehaviour.tryStart = function(parser,container) {
 	var data;
 	var tmp;
 	if(parser.indent < 4 || container.type == 2) {
-		data = commonmark_ItemBehaviour.parseListMarker(parser);
+		data = commonmark_ItemBehaviour.parseListMarker(parser,container);
 		tmp = data != null;
 	} else {
 		tmp = false;
@@ -1354,7 +1354,7 @@ commonmark_ItemBehaviour.tryStart = function(parser,container) {
 		return 0;
 	}
 };
-commonmark_ItemBehaviour.parseListMarker = function(parser) {
+commonmark_ItemBehaviour.parseListMarker = function(parser,container) {
 	var rest = HxOverrides.substr(parser.currentLine,parser.nextNonspace,null);
 	var data;
 	var match;
@@ -1362,7 +1362,7 @@ commonmark_ItemBehaviour.parseListMarker = function(parser) {
 		data = new commonmark_ListData(2,parser.indent);
 		data.bulletChar = commonmark_ItemBehaviour.reBulletListMarker.matched(0).charAt(0);
 		match = commonmark_ItemBehaviour.reBulletListMarker.matched(0);
-	} else if(commonmark_ItemBehaviour.reOrderedListMarker.match(rest)) {
+	} else if(commonmark_ItemBehaviour.reOrderedListMarker.match(rest) && (container.type == 9 || commonmark_ItemBehaviour.reOrderedListMarker.matched(1) == "1")) {
 		data = new commonmark_ListData(1,parser.indent);
 		data.start = Std.parseInt(commonmark_ItemBehaviour.reOrderedListMarker.matched(1));
 		data.delimiter = commonmark_ItemBehaviour.reOrderedListMarker.matched(2);
