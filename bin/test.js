@@ -966,6 +966,7 @@ commonmark_InlineParser.prototype = {
 		_g.h[42] = stack_bottom;
 		_g.h[39] = stack_bottom;
 		_g.h[34] = stack_bottom;
+		var odd_match = false;
 		var closer = this.delimiters;
 		while(closer != null && closer.previous != stack_bottom) closer = closer.previous;
 		while(closer != null) {
@@ -976,7 +977,12 @@ commonmark_InlineParser.prototype = {
 				var opener = closer.previous;
 				var opener_found = false;
 				while(opener != null && opener != stack_bottom && opener != _g.h[closercc]) {
-					if(opener.cc == closer.cc && opener.can_open) {
+					if(closer.can_open || opener.can_close) {
+						odd_match = (opener.numdelims + closer.numdelims) % 3 == 0;
+					} else {
+						odd_match = false;
+					}
+					if(opener.cc == closer.cc && opener.can_open && !odd_match) {
 						opener_found = true;
 						break;
 					}
@@ -1028,7 +1034,7 @@ commonmark_InlineParser.prototype = {
 					}
 					closer = closer.next;
 				}
-				if(!opener_found) {
+				if(!opener_found && !odd_match) {
 					_g.h[closercc] = old_closer.previous;
 					if(!old_closer.can_open) {
 						this.removeDelimiter(old_closer);

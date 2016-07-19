@@ -654,6 +654,7 @@ class InlineParser {
             C_SINGLEQUOTE => stack_bottom,
             C_DOUBLEQUOTE => stack_bottom,
         ];
+        var odd_match = false;
 
         // find first closer above stack_bottom:
         var closer = delimiters;
@@ -670,7 +671,8 @@ class InlineParser {
                 var opener = closer.previous;
                 var opener_found = false;
                 while (opener != null && opener != stack_bottom && opener != openers_bottom[closercc]) {
-                    if (opener.cc == closer.cc && opener.can_open) {
+                    odd_match = (closer.can_open || opener.can_close) && (opener.numdelims + closer.numdelims) % 3 == 0;
+                    if (opener.cc == closer.cc && opener.can_open && !odd_match) {
                         opener_found = true;
                         break;
                     }
@@ -739,8 +741,12 @@ class InlineParser {
                         opener.node.literal = "\u201C";
                     closer = closer.next;
                 }
-                if (!opener_found) {
+                if (!opener_found && !odd_match) {
                     // Set lower bound for future searches for openers:
+                    // We don't do this with odd_match because a **
+                    // that doesn't match an earlier * might turn into
+                    // an opener, and the * might be matched by something
+                    // else.
                     openers_bottom[closercc] = old_closer.previous;
                     if (!old_closer.can_open) {
                         // We can remove a closer that can't be an opener,
