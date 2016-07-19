@@ -19,7 +19,6 @@ class HtmlRenderer extends Renderer {
     var options:HtmlRendererOptions;
     var disableTags:Int;
 
-    static var reHtmlTag = ~/<[^>]*>/;
     static var reUnsafeProtocol = ~/^javascript:|vbscript:|file:|data:/i;
     static var reSafeDataProtocol = ~/^data:image\/(?:png|gif|jpeg|webp)/i;
 
